@@ -1,759 +1,150 @@
 <!DOCTYPE html>
+<!-- Chosen Palette: Santa Cruz Official (Deep Blue, Light Gray, White, Dark Gray text) -->
+<!-- Application Structure Plan: The application is designed as a single-page interactive dashboard. This structure was chosen for its usability in data exploration, allowing users to get a quick overview (KPIs), analyze trends (charts), look up specific details (filterable table), and visualize geographical distribution (map) without navigating away from the page. The flow is designed to be intuitive: start with a high-level summary, then drill down into visual analysis, geographical context, or detailed data. This is more user-friendly than a linear report, as it allows users to access the information they need in the order they prefer. -->
+<!-- Visualization & Content Choices:
+- KPIs: Inform goal. Method: Styled HTML divs. Justification: Standard for quick summaries.
+- Projects/Investment per Locality: Compare goal. Method: Chart.js Bar Chart. Justification: Best for comparing quantities across categories (localities).
+- Projects by Type: Inform goal (composition). Method: Chart.js Doughnut Chart. Justification: Ideal for showing part-to-whole relationships.
+- Projects by Organism: Inform goal (composition). Method: Chart.js Pie Chart. Justification: Effective for showing distribution by responsible entity.
+- Map of Works: Inform goal (geographical distribution). Method: Leaflet.js map with GeoJSON overlay. Justification: Provides direct spatial context for each project.
+- Data Table: Organize/Inform goal. Method: Filterable HTML table. Justification: Provides granular access to all data points for users needing specifics.
+- Library/Method: All charts use Chart.js on <canvas>. Map uses Leaflet.js. All layout is Tailwind CSS.
+-->
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Estructura Orgánica Dinámica - Planeamiento Estratégico</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    <title>Dashboard de Obras Públicas - Santa Cruz</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAo9TXXGKKXl4ELJBlZTlGFhwD7tgqkxM/7ggwBY=" crossorigin=""/>
     <style>
-        /* Paleta de colores ajustada para un diseño más atractivo con #252c61 como base */
-        :root {
-            --primary-dark-blue: #252c61; /* Tu color base */
-            --secondary-dark-blue: #1a204b; /* Tono más oscuro para contrastes */
-            --light-background-blue: #e8ecf4; /* Un azul muy claro para el fondo */
-            --accent-blue: #3a478b; /* Un tono más claro y vibrante para acentos y hover */
-            
-            /* Degradados más suaves y atractivos */
-            --gradient-start-0: #1a204b; /* Más oscuro para el nivel superior */
-            --gradient-end-0: #252c61;
-            --gradient-start-1: #252c61;
-            --gradient-end-1: #3a478b;
-            --gradient-start-2: #3a478b;
-            --gradient-end-2: #5163a3;
-            --gradient-start-3: #5163a3;
-            --gradient-end-3: #6a7ebb;
-            --gradient-start-4: #6a7ebb;
-            --gradient-end-4: #839adc;
-            --gradient-start-5: #839adc; /* Más claro para los niveles inferiores */
-            --gradient-end-5: #9cb1e6;
-
-            --text-dark: #333333; /* Texto principal oscuro */
-            --text-light: #ffffff; /* Texto claro sobre fondos oscuros */
-            --border-light: #cccccc; /* Bordes suaves derivados del azul */
-            --popup-background: #ffffff; /* Fondo del popup */
-            --info-icon-color: #84A7DB; /* ¡NUEVO COLOR DEL ICONO DE INFORMACIÓN! */
-            --info-icon-hover: #6a8ec2; /* Tono más oscuro al pasar el ratón para el icono */
-            --close-button-color: #6c757d; /* Gris para el botón de cerrar */
-            --close-button-hover: #495057; /* Gris más oscuro al pasar el ratón */
-            --shadow-color: rgba(0, 0, 0, 0.18); /* Color de sombra general */
-            --popup-border-color: #e0e0e0; /* Borde suave para el popup */
-        }
-
-        /* Estilos CSS */
-        body {
-            font-family: 'Roboto', sans-serif; /* Usamos Roboto para un look moderno */
-            margin: 0;
-            padding: 20px;
-            background-color: var(--light-background-blue);
-            color: var(--text-dark);
-            line-height: 1.6;
-            overflow-x: hidden; /* Evita scroll horizontal innecesario */
-        }
-
-        .container {
-            max-width: 1000px;
-            margin: 30px auto;
-            background: var(--popup-background);
-            padding: 30px 40px;
-            border-radius: 12px; /* Bordes un poco más redondeados */
-            box-shadow: 0 6px 20px var(--shadow-color); /* Sombra más pronunciada */
-            position: relative;
-            animation: fadeIn 0.8s ease-out; /* Animación de entrada */
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        h1 {
-            color: var(--primary-dark-blue);
-            text-align: center;
-            margin-bottom: 35px;
-            font-size: 2.4em; /* Título un poco más grande */
-            font-weight: 700; /* Más audaz */
-            border-bottom: 3px solid var(--accent-blue); /* Borde más grueso */
-            padding-bottom: 15px;
-            letter-spacing: 0.5px; /* Espaciado de letras */
-        }
-
-        /* Estilos de la lista jerárquica */
-        .organizational-chart {
-            list-style-type: none;
-            padding: 0;
-            margin: 0;
-        }
-
-        .organizational-chart ul {
-            list-style-type: none;
-            padding-left: 30px; /* Mayor indentación para sub-niveles */
-            margin-top: 10px;
-            border-left: 2px dashed var(--border-light); /* Línea de conexión visual */
-            display: none; /* Inicialmente oculto */
-            overflow: hidden;
-            transition: max-height 0.4s ease-in-out, opacity 0.4s ease-in-out; /* Transición más suave */
-            max-height: 0;
-            opacity: 0;
-        }
-
-        .organizational-chart ul.expanded {
-            display: block;
-            max-height: 2000px; /* Suficientemente grande */
-            opacity: 1;
-        }
-
-        .organizational-chart li {
-            margin: 15px 0;
-            position: relative;
-        }
-
-        /* Estilos para los botones de las áreas */
-        .unit-header {
-            display: flex;
-            align-items: center;
-            background: linear-gradient(to right, var(--primary-dark-blue), var(--accent-blue)); /* Degradado por defecto */
-            color: var(--text-light);
-            border: none;
-            padding: 12px 25px; /* Más padding */
-            border-radius: 8px; /* Bordes más redondeados */
-            cursor: pointer;
-            font-size: 1.1em; /* Fuente un poco más grande */
-            font-weight: 700; /* Más audaz */
-            text-align: left;
-            width: 100%;
-            box-sizing: border-box;
-            transition: all 0.3s ease; /* Transición más general */
-            justify-content: space-between;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); /* Sombra sutil para "levantar" el botón */
-            position: relative; /* Para el pseudo-elemento hover */
-            overflow: hidden;
-            z-index: 1; /* Asegurar que los pseudo-elementos brillen correctamente */
-        }
-
-        .unit-header::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(to right, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.3)); /* Efecto de brillo */
-            transition: all 0.4s ease-out;
-            z-index: 1;
-        }
-
-        .unit-header:hover::before {
-            left: 100%;
-        }
-
-        .unit-header:hover {
-            transform: translateY(-3px); /* Mayor efecto de elevación */
-            box-shadow: 0 7px 20px rgba(0, 0, 0, 0.25); /* Sombra más fuerte al pasar el ratón */
-        }
-
-        .unit-header:active {
-            transform: translateY(0);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        }
-
-        .unit-name-text {
-            flex-grow: 1;
-            position: relative; /* Para que el texto quede por encima del pseudo-elemento */
-            z-index: 2;
-        }
-
-        .toggle-icon {
-            background: none;
-            border: none;
-            color: var(--text-light);
-            font-size: 1.4em; /* Icono más grande */
-            font-weight: bold;
-            cursor: pointer;
-            margin-right: 15px; /* Más espacio */
-            width: 25px; /* Tamaño fijo */
-            text-align: center;
-            flex-shrink: 0;
-            transition: transform 0.2s ease, text-shadow 0.2s ease;
-            position: relative; /* Para que el icono quede por encima del pseudo-elemento */
-            z-index: 2;
-        }
-
-        .toggle-icon:hover {
-            transform: scale(1.1);
-            text-shadow: 0 0 10px rgba(255, 255, 255, 0.7); /* Sombra de texto al pasar el ratón */
-        }
-
-        .info-icon {
-            background-color: var(--info-icon-color); /* ¡COLOR ACTUALIZADO! */
-            color: var(--text-light);
-            border: none;
-            border-radius: 50%;
-            width: 36px; /* Icono más grande */
-            height: 36px;
-            font-size: 1.3em; /* Fuente más grande */
-            font-weight: bold;
-            cursor: pointer;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            transition: all 0.3s ease; /* Transición general */
-            flex-shrink: 0;
-            margin-left: 15px; /* Más espacio */
-            box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.2), 0 2px 5px rgba(0, 0, 0, 0.2); /* Sombra interna y externa */
-            position: relative; /* Para que el icono quede por encima del pseudo-elemento */
-            z-index: 2;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.3); /* Sombra al texto del icono */
-        }
-
-        .info-icon:hover {
-            background-color: var(--info-icon-hover); /* ¡COLOR HOVER ACTUALIZADO! */
-            transform: scale(1.15); /* Efecto de "pop" más pronunciado */
-            box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3), 0 5px 15px rgba(0, 0, 0, 0.3); /* Sombras más fuertes al hover */
-            text-shadow: 0 0 15px rgba(255, 255, 255, 0.8); /* Efecto de destello en el texto */
-        }
-
-        /* Estilos del Pop-up */
-        .popup-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.75); /* Fondo más oscuro y opaco */
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.4s ease, visibility 0.4s ease;
-        }
-
-        .popup-overlay.active {
-            opacity: 1;
-            visibility: visible;
-        }
-
-        .popup {
-            background-color: var(--popup-background);
-            border-radius: 15px; /* Más redondeado */
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4), 0 0 0 3px var(--popup-border-color); /* Sombra más fuerte y borde sutil */
-            padding: 35px 40px; /* Más padding */
-            width: 90%;
-            max-width: 700px; /* Mayor ancho máximo */
-            max-height: 90vh; /* Mayor altura máxima */
-            overflow-y: auto;
-            transform: scale(0.7); /* Inicia más pequeño */
-            transition: transform 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55); /* Efecto de rebote */
-        }
-
-        .popup-overlay.active .popup {
-            transform: scale(1);
-        }
-
-        .popup-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 25px; /* Mayor margen */
-            border-bottom: 3px solid var(--accent-blue); /* Borde más decorativo */
-            padding-bottom: 15px;
-        }
-
-        .popup-header h2 {
-            margin: 0;
-            font-size: 2.1em; /* Título del pop-up más grande */
-            color: var(--primary-dark-blue);
-            font-weight: 700;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
-        }
-
-        .close-button {
-            background: var(--close-button-color); /* Fondo circular para el botón de cerrar */
-            border: none;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 1.8em; /* Tamaño del texto */
-            color: var(--text-light); /* Color del texto */
-            cursor: pointer;
-            line-height: 1;
-            transition: all 0.3s ease;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-        }
-
-        .close-button:hover {
-            background-color: var(--close-button-hover);
-            transform: rotate(90deg) scale(1.1); /* Animación al cerrar más pronunciada */
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-        }
-
-        .popup-content p {
-            margin-bottom: 15px;
-            line-height: 1.8;
-            color: var(--text-dark);
-            font-size: 1em; /* Texto un poco más grande */
-        }
-
-        .popup-content strong {
-            color: var(--primary-dark-blue); /* Negritas con el color principal */
-            font-weight: 700;
-        }
-
-        .popup-content ul {
-            list-style-type: disc;
-            margin-left: 25px;
-            padding: 0;
-            color: var(--text-dark);
-        }
-
-        .popup-content ul li {
-            margin-bottom: 8px;
-            font-size: 0.95em;
-        }
-
-        /* Colores por nivel jerárquico con degradados */
-        .level-0 > .unit-header { background: linear-gradient(to right, var(--gradient-start-0), var(--gradient-end-0)); }
-        .level-0 > .unit-header:hover { background: linear-gradient(to right, var(--gradient-end-0), var(--gradient-start-0)); }
-
-        .level-1 > .unit-header { background: linear-gradient(to right, var(--gradient-start-1), var(--gradient-end-1)); }
-        .level-1 > .unit-header:hover { background: linear-gradient(to right, var(--gradient-end-1), var(--gradient-start-1)); }
-
-        .level-2 > .unit-header { background: linear-gradient(to right, var(--gradient-start-2), var(--gradient-end-2)); }
-        .level-2 > .unit-header:hover { background: linear-gradient(to right, var(--gradient-end-2), var(--gradient-start-2)); }
-
-        .level-3 > .unit-header { background: linear-gradient(to right, var(--gradient-start-3), var(--gradient-end-3)); }
-        .level-3 > .unit-header:hover { background: linear-gradient(to right, var(--gradient-end-3), var(--gradient-start-3)); }
-
-        .level-4 > .unit-header { background: linear-gradient(to right, var(--gradient-start-4), var(--gradient-end-4)); }
-        .level-4 > .unit-header:hover { background: linear-gradient(to right, var(--gradient-end-4), var(--gradient-start-4)); }
-
-        .level-5 > .unit-header { background: linear-gradient(to right, var(--gradient-start-5), var(--gradient-end-5)); }
-        .level-5 > .unit-header:hover { background: linear-gradient(to right, var(--gradient-end-5), var(--gradient-start-5)); }
-
+        body { font-family: 'Inter', sans-serif; }
+        .chart-container { position: relative; width: 100%; max-width: 900px; margin-left: auto; margin-right: auto; height: 400px; max-height: 50vh; }
+        .kpi-card { transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out; }
+        .kpi-card:hover { transform: translateY(-5px); box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1); }
+        .section-title { border-bottom: 2px solid #0a2351; padding-bottom: 0.5rem; } /* Deep blue from Santa Cruz website */
+        #mapContainer { height: 500px; max-height: 70vh; } /* Custom height for the map */
     </style>
 </head>
-<body>
-    <div class="container">
-        <h1>Estructura Orgánica con Información Detallada</h1>
+<body class="bg-gray-50 text-gray-800">
 
-        <ul class="organizational-chart">
-            <li class="level-0">
-                <div class="unit-header" data-info="jefe_gabinete">
-                    <span class="unit-name-text">JEFE DE GABINETE DE MINISTROS</span>
-                    <span class="info-icon">i</span>
-                </div>
-                <ul>
-                    <li class="level-1">
-                        <div class="unit-header" data-info="secretaria_planeamiento">
-                            <span class="toggle-icon">+</span>
-                            <span class="unit-name-text">SECRETARÍA DE ESTADO DE PLANEAMIENTO ESTRATÉGICO</span>
-                            <span class="info-icon">i</span>
-                        </div>
-                        <ul>
-                            <li class="level-2">
-                                <div class="unit-header" data-info="subsecretaria_planificacion">
-                                    <span class="toggle-icon">+</span>
-                                    <span class="unit-name-text">SUBSECRETARÍA DE PLANIFICACIÓN E INFRAESTRUCTURA DE DATOS PROVINCIALES</span>
-                                    <span class="info-icon">i</span>
-                                </div>
-                                <ul>
-                                    <li class="level-3">
-                                        <div class="unit-header" data-info="direccion_planificacion">
-                                            <span class="toggle-icon">+</span>
-                                            <span class="unit-name-text">DIRECCIÓN PROVINCIAL DE PLANIFICACIÓN</span>
-                                            <span class="info-icon">i</span>
-                                        </div>
-                                        <ul>
-                                            <li class="level-4">
-                                                <div class="unit-header" data-info="direccion_programas">
-                                                    <span class="toggle-icon">+</span>
-                                                    <span class="unit-name-text">DIRECCIÓN DE PROGRAMAS Y PROYECTOS</span>
-                                                    <span class="info-icon">i</span>
-                                                </div>
-                                                <ul>
-                                                    <li class="level-5">
-                                                        <div class="unit-header" data-info="jefatura_documentos">
-                                                            <span class="unit-name-text">JEFATURA DE DEPARTAMENTO DOCUMENTOS Y REGISTROS</span>
-                                                            <span class="info-icon">i</span>
-                                                        </div>
-                                                    </li>
-                                                </ul>
-                                            </li>
-                                            <li class="level-4">
-                                                <div class="unit-header" data-info="direccion_organizacion">
-                                                    <span class="toggle-icon">+</span>
-                                                    <span class="unit-name-text">DIRECCIÓN DE ORGANIZACIÓN ESTRATÉGICA</span>
-                                                    <span class="info-icon">i</span>
-                                                </div>
-                                                <ul>
-                                                    <li class="level-5">
-                                                        <div class="unit-header" data-info="jefatura_registro_obras">
-                                                            <span class="unit-name-text">JEFATURA DE DEPARTAMENTO REGISTRO DE OBRAS</span>
-                                                            <span class="info-icon">i</span>
-                                                        </div>
-                                                    </li>
-                                                </ul>
-                                            </li>
-                                        </ul>
-                                    </li>
-                                    <li class="level-3">
-                                        <div class="unit-header" data-info="direccion_estadistica_censos">
-                                            <span class="toggle-icon">+</span>
-                                            <span class="unit-name-text">DIRECCIÓN PROVINCIAL DE ESTADÍSTICA Y CENSOS</span>
-                                            <span class="info-icon">i</span>
-                                        </div>
-                                        <ul>
-                                            <li class="level-4">
-                                                <div class="unit-header" data-info="direccion_estadistica">
-                                                    <span class="toggle-icon">+</span>
-                                                    <span class="unit-name-text">DIRECCIÓN DE ESTADÍSTICA</span>
-                                                    <span class="info-icon">i</span>
-                                                </div>
-                                                <ul>
-                                                    <li class="level-5">
-                                                        <div class="unit-header" data-info="jefatura_info_economica">
-                                                            <span class="unit-name-text">JEFATURA DE DEPARTAMENTO INFORMACIÓN ECONÓMICA Y RECURSOS</span>
-                                                            <span class="info-icon">i</span>
-                                                        </div>
-                                                    </li>
-                                                    <li class="level-5">
-                                                        <div class="unit-header" data-info="jefatura_censos_socioeconomicos">
-                                                            <span class="unit-name-text">JEFATURA DE DEPARTAMENTO CENSOS ECONÓMICOS-SOCIALES</span>
-                                                            <span class="info-icon">i</span>
-                                                        </div>
-                                                    </li>
-                                                    <li class="level-5">
-                                                        <div class="unit-header" data-info="jefatura_cartografia_est">
-                                                            <span class="unit-name-text">JEFATURA DE DEPARTAMENTO CARTOGRAFÍA</span>
-                                                            <span class="info-icon">i</span>
-                                                        </div>
-                                                    </li>
-                                                </ul>
-                                            </li>
-                                        </ul>
-                                    </li>
-                                    <li class="level-3">
-                                        <div class="unit-header" data-info="direccion_datos_cartografia">
-                                            <span class="toggle-icon">+</span>
-                                            <span class="unit-name-text">DIRECCIÓN PROVINCIAL DE DATOS Y CARTOGRAFÍA OFICIAL</span>
-                                            <span class="info-icon">i</span>
-                                        </div>
-                                        <ul>
-                                            <li class="level-4">
-                                                <div class="unit-header" data-info="direccion_situ">
-                                                    <span class="unit-name-text">SISTEMA DE INFORMACIÓN TERRITORIAL UNIFICADO (SITU) Y CARTOGRAFIA</span>
-                                                    <span class="info-icon">i</span>
-                                                </div>
-                                            </li>
-                                            <li class="level-4">
-                                                <div class="unit-header" data-info="direccion_banco_datos">
-                                                    <span class="unit-name-text">BANCO DE DATOS PROVINCIALES</span>
-                                                    <span class="info-icon">i</span>
-                                                </div>
-                                            </li>
-                                        </ul>
-                                    </li>
-                                </ul>
-                            </li>
-                        </ul>
-                    </li>
-                </ul>
-            </li>
-        </ul>
-
-        <div id="infoPopupOverlay" class="popup-overlay">
-            <div id="infoPopup" class="popup">
-                <div class="popup-header">
-                    <h2 id="popupTitle"></h2>
-                    <button class="close-button" onclick="closePopup()">×</button>
-                </div>
-                <div class="popup-content" id="popupContent">
+    <!-- Header -->
+    <header class="bg-white shadow-md sticky top-0 z-10">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-20">
+                <div class="flex items-center">
+                    <div class="bg-[#0a2351] p-2 rounded-lg mr-4"> <!-- Deep blue from Santa Cruz website -->
+                        <svg class="h-8 w-8 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18h18a2.25 2.25 0 012.25 2.25v10.5A2.25 2.25 0 0119.5 18.75H4.5A2.25 2.25 0 012.25 16.5V4.5A2.25 2.25 0 014.5 2.25z" />
+                        </svg>
                     </div>
+                    <h1 class="text-2xl md:text-3xl font-bold text-gray-900">Análisis de Obras Públicas en Santa Cruz</h1>
+                </div>
             </div>
         </div>
-    </div>
+    </header>
 
-    <script>
-        // Datos de las áreas (información de misión y funciones)
-        const areaInfo = {
-            "jefe_gabinete": {
-                "nombre": "JEFE DE GABINETE DE MINISTROS",
-                "mision": "Este es el órgano superior del que depende la Secretaría de Estado de Planeamiento Estratégico. Su misión principal es coordinar la acción de gobierno, asistir al Poder Ejecutivo y supervisar la gestión de los Ministerios y Secretarías de Estado.",
-                "funciones": [
-                    "Coordinar el accionar de los distintos Ministerios y Secretarías.",
-                    "Asistir al Gobernador en la formulación y ejecución de las políticas provinciales.",
-                    "Supervisar la ejecución de las políticas de Estado."
-                ]
-            },
-            "secretaria_planeamiento": {
-                "nombre": "SECRETARÍA DE ESTADO DE PLANEAMIENTO ESTRATÉGICO",
-                "mision": "Coordinar, impulsar y ejecutar la planificación estratégica del desarrollo provincial.",
-                "funciones": [
-                    "Diagnosticar, mediante el análisis territorial y la información estadística, los planes y programas de orden sectorial y/o global, adecuándolos a los objetivos generales de la acción de gobierno, priorizando una visión estratégica y territorial del desarrollo.",
-                    "Asistir a las áreas del gobierno provincial de manera interdisciplinaria para confeccionar diagnósticos socioculturales y territoriales robustos desde la producción y el análisis de los datos a nivel exploratorio, descriptivo y explicativo.",
-                    "Construir y gestionar un sistema de indicadores multidimensionales del ordenamiento jurídico territorial y poblacional en función de los objetivos de desarrollo del gobierno provincial, con un fuerte componente de indicadores territoriales y de planificación.",
-                    "Entender como organismo asesor del Gobierno Provincial en todo lo inherente al planeamiento estratégico, la información territorial y la articulación de políticas para el desarrollo provincial.",
-                    "Entender en el diseño e implementación de un Banco Provincial de Datos.",
-                    "Detectar las eventuales dispersiones y proponer alternativas de solución.",
-                    "Compatibilizar y articular las acciones de gobierno a través de la planificación estratégica, utilizando la información geoespacial y estadística para una mejor coordinación.",
-                    "Entender en las actividades estadísticas oficiales que se realicen en el territorio de la provincia y controlar el funcionamiento del sistema estadístico provincial.",
-                    "Reconocer y analizar el impacto demográfico de las condiciones y estilo de vida de nuestra población.",
-                    "Entender en el análisis, compilación y evaluación de datos e información originados en el sector privado en el proceso del desarrollo provincial.",
-                    "Celebrar acuerdos y convenios para la aplicación de programas de asistencia técnica y/o financiera en materia de su competencia, con entidades públicas o privadas del país con organismos internacionales.",
-                    "Asistir a los municipios en materia de planificación.",
-                    "Entender en la orientación de la utilización de los recursos hacia los sectores de la producción más convenientes y en la ejecución de las políticas, consecuencias a dicho objetivo, fijando prioridades de acuerdo al ordenamiento territorial y asentamientos productivos.",
-                    "Requerir a los organismos de gobierno y entidades privadas todos los informes que sean necesarios para cumplir con los objetivos de la Secretaría, siendo suministro obligatorio por parte de los organismos oficiales.",
-                    "Promover la investigación y estudios relativos al desarrollo provincial conjuntamente con otros organismos de gobierno, brindando la información y asesoramiento que le correspondan a los mismos en dicho campo.",
-                    "Entender en el Sistema de Información Territorial Unificado.",
-                    "Coordinar, analizar y evaluar todos los proyectos de asistencia financiera y técnica que se propongan a la provincia asesorando al poder ejecutivo sobre medidas más convenientes a adoptar para su utilización.",
-                    "Asumir la representación alterna del poder ejecutivo provincial ante los organismos de planeamiento extra provinciales, Consejo Federal de Inversiones y demás Entes afines que, cada caso determine."
-                ]
-            },
-            "subsecretaria_planificacion": {
-                "nombre": "SUBSECRETARÍA DE PLANIFICACIÓN E INFRAESTRUCTURA DE DATOS PROVINCIALES",
-                "mision": "Impulsar la planificación estratégica territorial como eje articulador de las políticas públicas provinciales. Desarrollar y gestionar la Infraestructura de Datos Espaciales (IDE) como plataforma fundamental para la planificación, la gestión territorial y la toma de decisiones informadas. Integrar la información territorial, estadística y de planificación para generar conocimiento estratégico para el desarrollo provincial.",
-                "funciones": [
-                    "Liderar y coordinar la formulación, implementación y seguimiento de los planes estratégicos de desarrollo provincial.",
-                    "Desarrollar y gestionar la Infraestructura de Datos Espaciales (IDE) como una herramienta central para la planificación territorial y la toma de decisiones.",
-                    "Integrar la información geoespacial, los datos del Banco Provincial y los lineamientos de planificación para generar análisis territoriales estratégicos.",
-                    "Supervisar y articular las acciones de la Dirección Provincial de Planificación Estratégica, la Dirección Provincial de Datos y Cartografía Oficial y La Dirección Provincial de Estadística y Censos.",
-                    "Promover el uso de la información territorial y las herramientas de planificación en todas las áreas del gobierno provincial.",
-                    "Facilitar el acceso y la utilización de la información estadística relevante para la planificación y el análisis territorial."
-                ]
-            },
-            "direccion_planificacion": {
-                "nombre": "DIRECCIÓN PROVINCIAL DE PLANIFICACIÓN",
-                "mision": "Entiende como organismo Técnico y Asesor de la Subsecretaría de Planificación e Infraestructura Datos Provinciales, en todo lo inherente al Planeamiento, Análisis, Control de Gestión, e Información General de Gobierno, como así también en lo referente a los aspectos globales del Desarrollo integral de la Provincia. Conducir el proceso de planificación estratégica a nivel provincial, definiendo objetivos, estrategias y líneas de acción para el desarrollo integral y sostenible del territorio. Articular las políticas sectoriales con la visión estratégica territorial, asegurando la coherencia y la eficiencia de la acción gubernamental.",
-                "funciones": [
-                    "Liderar la elaboración, seguimiento y evaluación del Plan Estratégico Provincial.",
-                    "Integrar las perspectivas territoriales en la formulación de objetivos políticos y estratégicos para el desarrollo integral de la Provincia.",
-                    "Detectar las eventuales dispersiones y proponer alternativas de solución con un enfoque en la planificación territorial y sectorial coordinada.",
-                    "Compatibilizar y articular las acciones de gobierno a través de la planificación estratégica, en estrecha colaboración con la Dirección Provincial de Datos y Cartografía Oficial."
-                ]
-            },
-            "direccion_programas": {
-                "nombre": "DIRECCIÓN DE PROGRAMAS Y PROYECTOS",
-                "mision": "Estructurar programas, planes y proyectos conducentes al cumplimiento del objetivo de la Dirección Provincial de Planificación y efectuar los análisis y evaluaciones de factibilidad económica financiera de los planes y programas provinciales, correlacionados con el conjunto del planeamiento provincial.",
-                "funciones": [
-                    "Asesorar y asistir al Director Provincial de Planificación en los aspectos relacionados con su misión.",
-                    "Realizar la evaluación económica - financiera e implicancias sociales y presupuestaria de los planes, proyectos y programas de inversión.",
-                    "Inventariar todos los recursos de planeamiento de la provincia con vista a asesorar y apoyar técnicamente las actividades de los mismos.",
-                    "Definir las normas y procedimientos metodológicos para la elaboración de planes, programas y proyectos.",
-                    "Preparar el presupuesto anual.",
-                    "Integrar y conformar el equipo multidisciplinario para el cumplimiento de sus funciones.",
-                    "Estudiar, estructurar y formular los planes, programas y proyectos de desarrollo del sistema económico social de la provincia, como así también aquellos generados por distintas áreas del Sector Público Provincial, Entes Descentralizados, Autárquicos y Empresas del Estado."
-                ]
-            },
-            "direccion_organizacion": {
-                "nombre": "DIRECCIÓN DE ORGANIZACIÓN ESTRATÉGICA",
-                "mision": "Organizar la información destinada a la conformación de planes conducentes al cumplimiento de los objetivos de las políticas y estrategias el gobierno. Desarrollar diagnósticos sobre la situación de la provincia, acerca del uso del suelo, necesidades y disponibilidades de servicios básicos. Implementar herramientas e instrumentos de planificación urbana que colaboren con el crecimiento y desarrollo de la provincia.",
-                "funciones": [
-                    "Reunir, analizar, sistematizar y evaluar toda la información técnica necesaria para la estructuración de programas y planes de desarrollo del sistema económico social.",
-                    "Diseñar e implementar la creación de un registro provincial de obras y emprendimientos en ejecución o en estudio y su constante seguimiento.",
-                    "Formular, evaluar y/o participar en la elaboración de proyectos específicos, de acuerdo a las metas, estrategias políticas determinadas por el Poder Ejecutivo Provincial.",
-                    "Efectuar la revisión y actualización periódica de planes, programas y proyectos."
-                ]
-            },
-            "jefatura_documentos": {
-                "nombre": "JEFATURA DE DEPARTAMENTO DOCUMENTOS Y REGISTROS",
-                "mision": "Compilar, registrar, sistematizar y mantener actualizada toda la información disponible sobre planeamiento y desarrollo.",
-                "funciones": [
-                    "Dirigir, mantener y ejecutar todas las tareas necesarias para conformar una biblioteca que contenga toda la bibliografía disponible para servir de base a las tareas de planeamiento.",
-                    "Prestar servicios de orientación y consulta tanto al sector público como privado.",
-                    "Seleccionar, compaginar y elaborar información para ser editada por la dirección.",
-                    "Compilar toda la información técnica científica provincial, nacional e internacional disponible para servir de base de información para la elaboración de proyectos, programas y planes."
-                ]
-            },
-            "jefatura_registro_obras": {
-                "nombre": "JEFATURA DE DEPARTAMENTO REGISTRO DE OBRAS",
-                "mision": "Compilar, registrar, sistematizar y mantener actualizada toda la información disponible sobre obras y emprendimientos en ejecución o en estudio de nuestro territorio.",
-                "funciones": [
-                    "Compilar, registrar, sistematizar y mantener actualizada toda la información disponible sobre obras y emprendimientos en ejecución o en estudio de nuestro territorio.",
-                    "Dirigir, mantener y ejecutar todas las tareas necesarias para conformar un registro provincial de obras.",
-                    "Asistir a la Dirección de Organización estratégica en sus funciones."
-                ]
-            },
-            "direccion_estadistica_censos": {
-                "nombre": "DIRECCIÓN PROVINCIAL DE ESTADÍSTICA Y CENSOS",
-                "mision": "Compilar, clasificar, analizar y valorar todo tipo de información económica, técnica-social, disponible en el país que sirvan de base de datos de informaciones para la Subsecretaría de Planificación e Infraestructura de Datos Provinciales y efectuar todos los análisis estadísticos, cuando correspondan, como así también las estadísticas y censos establecidos por ley.",
-                "funciones": [
-                    "Asumir la representación provincial ante el instituto nacional de estadísticas y censos.",
-                    "Realizar los censos y encuestas necesarios para obtener información demográfica, social y económica relevante para la provincia.",
-                    "Producir y difundir las estadísticas oficiales de la provincia, garantizando su calidad y oportunidad para la toma de decisiones en todas las áreas de gobierno, incluyendo la planificación.",
-                    "Compilar, evaluar, analizar, graficar y tabular toda la información social como económica y técnica necesaria para la toma de decisiones.",
-                    "Ejercer las funciones establecidas por ley.",
-                    "Compilar y analizar todo el flujo de información económica disponible.",
-                    "Compilar, analizar y evaluar las ofertas y demandas de los mercados provinciales, nacionales e internacionales.",
-                    "Compilar, analizar y evaluar toda la información de orden social, prestaciones de servicios, etc.",
-                    "Colaborar con la Dirección Provincial de Datos y Cartografía Oficial en la integración de los datos estadísticos al Banco de Datos Provinciales y al SITU.",
-                    "Preparar su presupuesto anual."
-                ]
-            },
-            "direccion_estadistica": {
-                "nombre": "DIRECCIÓN DE ESTADÍSTICA",
-                "mision": "Compilar, analizar y evaluar toda la información a ser susceptibles de tratar por métodos estadísticos, programas, efectuar y coordinar los censos provinciales y nacionales.",
-                "funciones": [
-                    "Asesorar y asistir a la dirección provincial en su misión.",
-                    "Efectuar los análisis estadísticos económicos y sociales de todas las informaciones que sean susceptibles de ser tratadas por tal método.",
-                    "Efectuar como analizar y preparar los censos económicos-sociales provinciales.",
-                    "Efectuar y coordinar los censos nacionales.",
-                    "Elaborar y compaginar los métodos estadísticos provinciales.",
-                    "Mantener actualizada toda la información estadística disponible.",
-                    "Preparar su presupuesto anual."
-                ]
-            },
-            "jefatura_info_economica": {
-                "nombre": "JEFATURA DE DEPARTAMENTO INFORMACIÓN ECONÓMICA Y RECURSOS",
-                "mision": "Compilar toda la información, sobre recursos provinciales, naturales o no, renovables detallando naturaleza, datos técnicos, cuantificaciones, ubicaciones geográficas, uso y aplicaciones.",
-                "funciones": [
-                    "Realizar el estudio del sistema económico provincial de comercialización, producción, bienes y servicios.",
-                    "Compilar toda información sobre la explotación sobre los recursos nacionales provinciales.",
-                    "Estudio del mercado nacional.",
-                    "Estudio de mercado internacional.",
-                    "Actualización de los registros."
-                ]
-            },
-            "jefatura_censos_socioeconomicos": {
-                "nombre": "JEFATURA DE DEPARTAMENTO CENSOS ECONÓMICOS-SOCIALES",
-                "mision": "Planificar, dirigir, organizar, coordinar y supervisar los relevamientos censales socio-económicos.",
-                "funciones": [
-                    "Analizar evaluar los resultados censales.",
-                    "Establecer, estudiar y determinar las normas para estudios censales.",
-                    "Mantener y archivar registros censales.",
-                    "Establecer, mantener y coordinar estudios censales con organismos similares de orden social."
-                ]
-            },
-            "jefatura_cartografia_est": {
-                "nombre": "JEFATURA DE DEPARTAMENTO CARTOGRAFÍA",
-                "mision": "Iniciación de los planos tanto urbano, como rurales de la provincia de santa cruz.",
-                "funciones": [
-                    "Pegado de datos censales a los planos digitales.",
-                    "Diagramar y coordinar carga de trabajo en los distintos operativos.",
-                    "Confección de planos de sectores de trabajo.",
-                    "Segmentación de la cartografía de la provincia.",
-                    "Pegado de la cartografía a diferentes imágenes satelitales."
-                ]
-            },
-            "direccion_datos_cartografia": {
-                "nombre": "DIRECCIÓN PROVINCIAL DE DATOS Y CARTOGRAFÍA OFICIAL",
-                "mision": "Gestionar de manera integral la información geoespacial y la cartografía oficial de la Provincia, incluyendo la Infraestructura de Datos Espaciales (IDE). Proveer información territorial precisa, actualizada y accesible para la planificación, la gestión territorial, la toma de decisiones gubernamentales y el desarrollo provincial. Tendrá a su cargo el Banco de Provincial de Datos, el Sistema de Información Territorial Unificado (SITU), la cartografía oficial de la provincia y la coordinación con el Instituto Geográfico Nacional (IGN).",
-                "funciones": [
-                    "Diseñar, implementar y mantener la Infraestructura de Datos Espaciales (IDE) de la Provincia de Santa Cruz como plataforma central para la gestión territorial y la planificación.",
-                    "Integrar y gestionar el Banco de Datos Provinciales, asegurando su accesibilidad, calidad e interoperabilidad para las diferentes áreas de gobierno y especialmente para la planificación.",
-                    "Desarrollar y mantener el Sistema de Información Territorial Unificado (SITU) como herramienta principal de análisis, visualización y modelado territorial.",
-                    "Producir, actualizar y difundir la Cartografía Oficial de la provincia, integrando datos censales y otra información relevante para el análisis territorial.",
-                    "Coordinar y administrar la Oficina Provincial del Instituto Geográfico Nacional (IGN), asegurando la correcta aplicación de las normas y estándares nacionales en materia de información geográfica.",
-                    "Coordinar con otros organismos provinciales, nacionales e internacionales para la interoperabilidad de la IDE y el intercambio de información territorial.",
-                    "Promover el uso y la capacitación en el manejo de la IDE y sus herramientas, priorizando su aplicación en la planificación y la gestión territorial.",
-                    "Establecer y mantener los estándares y normas para la producción, gestión y difusión de la información cartográfica oficial de la provincia."
-                ]
-            },
-            "direccion_situ": {
-                "nombre": "SISTEMA DE INFORMACIÓN TERRITORIAL UNIFICADO (SITU) Y CARTOGRAFIA",
-                "mision": "Desarrollar y operar el Sistema de Información Territorial Unificado (SITU) como una herramienta de análisis y visualización geoespacial clave para la planificación y la gestión territorial, y producir la cartografía digital oficial de la provincia.",
-                "funciones": [
-                    "Desarrollar y mantener la plataforma tecnológica del SITU como herramienta fundamental para el análisis y la visualización territorial.",
-                    "Integrar información cartográfica, datos censales y otra información geoespacial relevante para generar inteligencia territorial para la planificación.",
-                    "Generar análisis, modelos y visualizaciones espaciales específicamente orientados a las necesidades de la planificación estratégica y la gestión territorial.",
-                    "Producir y actualizar la cartografía digital de la provincia, asegurando su precisión y utilidad para la planificación y el SITU.",
-                    "Realizar el pegado de datos censales a los planos digitales, priorizando su integración con otras capas de información territorial.",
-                    "Diagramar y coordinar la carga de trabajo cartográfica en función de las necesidades del SITU y la planificación.",
-                    "Confeccionar planos de sectores de trabajo con un enfoque territorial.",
-                    "Realizar la segmentación de la cartografía de la provincia para su uso eficiente en el SITU y la planificación.",
-                    "Integrar la cartografía a diferentes imágenes satelitales para obtener información territorial actualizada para la planificación."
-                ]
-            },
-            "direccion_banco_datos": {
-                "nombre": "BANCO DE DATOS PROVINCIALES",
-                "mision": "Administrar y mantener un repositorio centralizado de datos provinciales, con un enfoque especial en la integración y gestión de información geoespacial para apoyar la planificación y la toma de decisiones territoriales.",
-                "funciones": [
-                    "Administrar, mantener y actualizar el Banco de Datos Provinciales, con un fuerte énfasis en la integración de datos geoespaciales y su utilidad para la planificación.",
-                    "Definir estándares de calidad y protocolos de carga de datos, asegurando la consistencia con la información territorial.",
-                    "Garantizar el acceso seguro y eficiente a la información para los usuarios autorizados, con especial atención a las necesidades de las áreas de planificación.",
-                    "Integrar diferentes fuentes de datos provinciales, priorizando aquellos con relevancia territorial y para la planificación estratégica."
-                ]
-            }
-        };
+    <!-- Main Content -->
+    <main class="container mx-auto p-4 sm:p-6 lg:p-8">
+        <!-- Loading message for data -->
+        <div id="loadingMessage" class="text-center text-gray-600 text-lg mt-10">Cargando datos de obras...</div>
 
-        // Lógica JavaScript
-        const infoPopupOverlay = document.getElementById('infoPopupOverlay');
-        const popupTitle = document.getElementById('popupTitle');
-        const popupContent = document.getElementById('popupContent');
+        <!-- KPI Cards Section -->
+        <section id="kpis" class="mb-12 hidden"> <!-- Hidden initially, shown after data loads -->
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-bold text-gray-900 section-title inline-block">Resumen General</h2>
+                <p class="text-gray-600 mt-2 max-w-2xl mx-auto">Esta sección presenta los indicadores clave de desempeño (KPIs) que resumen el estado actual de las obras públicas registradas en la provincia.</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- KPI Cards will be populated by JS -->
+            </div>
+        </section>
 
-        // Manejo de Pop-ups (íconos 'i')
-        document.querySelectorAll('.info-icon').forEach(icon => {
-            icon.addEventListener('click', function(event) {
-                event.stopPropagation(); // Evita que el clic se propague al unit-header si lo hubiera
-                const unitHeader = this.closest('.unit-header');
-                const infoId = unitHeader.getAttribute('data-info');
+        <!-- Charts Section -->
+        <section id="charts" class="mb-12 hidden"> <!-- Hidden initially, shown after data loads -->
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-bold text-gray-900 section-title inline-block">Análisis Visual</h2>
+                <p class="text-gray-600 mt-2 max-w-2xl mx-auto">Explore la distribución de las obras a través de gráficos interactivos. Puede pasar el cursor sobre los gráficos para ver detalles específicos.</p>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="bg-white p-6 rounded-lg shadow-lg">
+                    <h3 class="text-xl font-semibold mb-4 text-center">Proyectos por Localidad</h3>
+                    <div class="chart-container" style="height: 450px;">
+                        <canvas id="localidadChart"></canvas>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-lg">
+                    <h3 class="text-xl font-semibold mb-4 text-center">Proyectos por Tipo</h3>
+                     <div class="chart-container" style="max-width: 450px;">
+                        <canvas id="tipoChart"></canvas>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-lg">
+                    <h3 class="text-xl font-semibold mb-4 text-center">Inversión Total por Localidad (En ARS)</h3>
+                    <div class="chart-container">
+                        <canvas id="montoChart"></canvas>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-lg">
+                    <h3 class="text-xl font-semibold mb-4 text-center">Proyectos por Organismo</h3>
+                     <div class="chart-container" style="max-width: 450px;">
+                        <canvas id="organismoChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
 
-                if (areaInfo.hasOwnProperty(infoId)) {
-                    const data = areaInfo[infoId];
-                    popupTitle.textContent = data.nombre;
-                    let contentHtml = `<p><strong>Misión:</strong> ${data.mision}</p>`;
-                    if (data.funciones && data.funciones.length > 0) {
-                        contentHtml += '<p><strong>Funciones:</strong></p><ul>';
-                        data.funciones.forEach(func => {
-                            contentHtml += `<li>${func}</li>`;
-                        });
-                        contentHtml += '</ul>';
-                    } else {
-                        contentHtml += '<p>No se especifican funciones detalladas.</p>';
-                    }
-                    popupContent.innerHTML = contentHtml;
-                    infoPopupOverlay.classList.add('active'); // Muestra el overlay y el popup
-                }
-            });
-        });
+        <!-- Map Section -->
+        <section id="map-section" class="mb-12 hidden"> <!-- Hidden initially, shown after data loads -->
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-bold text-gray-900 section-title inline-block">Mapa de Obras</h2>
+                <p class="text-gray-600 mt-2 max-w-2xl mx-auto">Explore la distribución geográfica de las obras en la provincia de Santa Cruz haciendo clic en los marcadores para ver los detalles del proyecto.</p>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <div id="mapContainer" class="chart-container" style="height: 500px; max-height: 70vh;"></div>
+            </div>
+        </section>
 
-        function closePopup() {
-            infoPopupOverlay.classList.remove('active'); // Oculta el overlay y el popup
-        }
+        <!-- Data Table Section -->
+        <section id="data-table" class="hidden"> <!-- Hidden initially, shown after data loads -->
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-bold text-gray-900 section-title inline-block">Explorador de Obras</h2>
+                <p class="text-gray-600 mt-2 max-w-2xl mx-auto">Utilice el campo de búsqueda para filtrar la tabla y encontrar información detallada sobre cada obra pública. Puede buscar por nombre, localidad, tipo u organismo.</p>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <div class="mb-4">
+                    <input type="text" id="searchInput" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-800" placeholder="Buscar en la tabla...">
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre de la Obra</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Localidad</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Organismo</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Monto (ARS)</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody id="obrasTableBody" class="bg-white divide-y divide-gray-200">
+                            <!-- Table rows will be populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
 
-        // Cierra el pop-up si se hace clic fuera de él
-        infoPopupOverlay.addEventListener('click', function(event) {
-            if (event.target === infoPopupOverlay) {
-                closePopup();
-            }
-        });
+    <!-- Footer -->
+    <footer class="bg-white mt-12 py-6 border-t border-gray-200">
+        <div class="container mx-auto text-center text-gray-500">
+            <p>&copy; 2025 Dashboard de Obras Públicas. Generado para el análisis de datos de Santa Cruz.</p>
+        </div>
+    </footer>
 
-        // Manejo de Despliegue/Colapse (íconos '+' '-')
-        document.querySelectorAll('.toggle-icon').forEach(icon => {
-            icon.addEventListener('click', function(event) {
-                event.stopPropagation(); // Evita que el clic se propague al unit-header
-
-                const unitHeader = this.closest('.unit-header');
-                const nestedList = unitHeader.nextElementSibling; // El ul anidado
-
-                if (nestedList && nestedList.tagName === 'UL') {
-                    if (nestedList.classList.contains('expanded')) {
-                        nestedList.classList.remove('expanded');
-                        this.textContent = '+';
-                    } else {
-                        nestedList.classList.add('expanded');
-                        this.textContent = '-';
-                    }
-                }
-            });
-        });
-
-        // Opcional: Expandir el primer nivel al cargar para mejor visualización inicial
-        document.addEventListener('DOMContentLoaded', function() {
-            const firstLevelUl = document.querySelector('.level-0 > ul');
-            if (firstLevelUl) {
-                firstLevelUl.classList.add('expanded');
-            }
-            // Asegurarse de que el toggle-icon del primer nivel (Secretaría) muestre '-'
-            const secretariaToggle = document.querySelector('.level-1 .toggle-icon');
-            if (secretariaToggle) {
-                 secretariaToggle.textContent = '-';
-            }
-        });
-
-    </script>
-</body>
-</html>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20n6fxyVCSyB6/RuJg0xx5bK2Pqfxd6o7g8yDliR4k3f9oB8B9B7E3f7Y7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8F7G5F3H5G2G7F7R4a8
