@@ -227,20 +227,34 @@
             console.log('KPI Debug: totalObras =', totalObras); // Debug log
 
             const totalInversion = features.reduce((sum, feature) => {
-                // Safely parse monto_contrato, defaulting to 0 if invalid
-                const monto = parseFloat(feature.properties.monto_contrato) || 0;
-                // console.log(`KPI Debug: Obra "${feature.properties.nombre_obra}" monto_contrato raw: "${feature.properties.monto_contrato}", parsed: ${monto}`); // Uncomment for more detailed debug per item
-                return sum + monto;
+                // Get the raw value of 'monto' (corrected from 'monto_contrato')
+                const rawMonto = feature.properties.monto; 
+                let cleanedMonto = 0;
+
+                // Attempt to clean and parse the 'monto' property.
+                // It handles both string and number types.
+                // For strings, it removes thousands separators (dots) and replaces comma decimal separators with dots.
+                if (typeof rawMonto === 'string') {
+                    cleanedMonto = parseFloat(rawMonto.replace(/\./g, '').replace(/,/g, '.')) || 0;
+                } else if (typeof rawMonto === 'number') {
+                    cleanedMonto = rawMonto;
+                }
+                
+                // console.log(`KPI Debug: Obra "${feature.properties.nombre}" monto raw: "${rawMonto}", cleaned/parsed: ${cleanedMonto}`); // Uncomment for more detailed debug per item
+                return sum + cleanedMonto;
             }, 0);
             console.log('KPI Debug: totalInversion =', totalInversion); // Debug log
 
+            // Note: The 'estado' values in the provided GeoJSON snippet (e.g., "mapa de inversiones")
+            // do not contain the keywords "finalizada" or "en ejecucion".
+            // Adjust the filter criteria below if your GeoJSON uses different keywords for these states.
             const obrasFinalizadas = features.filter(feature => 
-                feature.properties.estado && String(feature.properties.estado).toLowerCase() === 'finalizada'
+                feature.properties.estado && String(feature.properties.estado).toLowerCase().includes('finalizada')
             ).length;
             console.log('KPI Debug: obrasFinalizadas =', obrasFinalizadas); // Debug log
 
             const obrasEnEjecucion = features.filter(feature => 
-                feature.properties.estado && String(feature.properties.estado).toLowerCase() === 'en ejecucion'
+                feature.properties.estado && String(feature.properties.estado).toLowerCase().includes('en ejecucion')
             ).length;
             console.log('KPI Debug: obrasEnEjecucion =', obrasEnEjecucion); // Debug log
 
@@ -297,8 +311,15 @@
             // Data for Total Investment by Locality Chart
             const montoPorLocalidad = features.reduce((acc, feature) => {
                 const localidad = feature.properties.localidad || 'Desconocido';
-                const monto = parseFloat(feature.properties.monto_contrato) || 0;
-                acc[localidad] = (acc[localidad] || 0) + monto;
+                // Use the same cleaning logic as in renderKPIs
+                let cleanedMonto = 0;
+                const rawMonto = feature.properties.monto; // Corrected from monto_contrato
+                if (typeof rawMonto === 'string') {
+                    cleanedMonto = parseFloat(rawMonto.replace(/\./g, '').replace(/,/g, '.')) || 0;
+                } else if (typeof rawMonto === 'number') {
+                    cleanedMonto = rawMonto;
+                }
+                acc[localidad] = (acc[localidad] || 0) + cleanedMonto;
                 return acc;
             }, {});
             const sortedMontoLocalidades = Object.entries(montoPorLocalidad).sort(([, a], [, b]) => b - a);
@@ -483,22 +504,23 @@
             map = L.map('mapContainer').setView([-49.3308, -69.2162], 6); // Santa Cruz coordinates and zoom level
             map.attributionControl.setPrefix(''); // Removes Leaflet default attribution
 
-            // Add Argenmap SITU tiles to the map
-            L.tileLayer('https://wms.ign.gob.ar/geoserver/gwc/service/tms/1.0.0/capabaseargenmap@EPSG%3A3857@png/{z}/{x}/{-y}.png', {
+            // Add OpenStreetMap tiles (more robust default)
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 19,
-                attribution: '&copy; <a href="https://situ.santacruz.gob.ar/"> Argenmap SITU </a>'
+                attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
             }).addTo(map);
 
             // Add GeoJSON data to the map
             L.geoJson(geojsonData, {
                 onEachFeature: function (feature, layer) {
                     // Create a popup with detailed information for each feature
+                    // Corrected 'monto_contrato' to 'monto'
                     let popupContent = `
-                        <h4 class="font-bold">${feature.properties.nombre_obra || 'Plan de Obras 2025'}</h4>
+                        <h4 class="font-bold">${feature.properties.nombre || 'Plan de Obras 2025'}</h4>
                         <p><strong>Localidad:</strong> ${feature.properties.localidad || 'N/A'}</p>
                         <p><strong>Tipo:</strong> ${feature.properties.tipo || 'N/A'}</p>
                         <p><strong>Organismo:</strong> ${feature.properties.organismo || 'N/A'}</p>
-                        <p><strong>Monto:</strong> $${(parseFloat(feature.properties.monto_contrato) || 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                        <p><strong>Monto:</strong> $${(parseFloat(String(feature.properties.monto).replace(/\./g, '').replace(/,/g, '.')) || 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                         <p><strong>Estado:</strong> ${feature.properties.estado || 'N/A'}</p>
                     `;
                     layer.bindPopup(popupContent);
@@ -533,11 +555,13 @@
                 const row = tbody.insertRow();
                 row.classList.add('hover:bg-gray-100'); // Add hover effect for table rows
 
-                row.insertCell().textContent = props.nombre_obra || 'N/A';
+                row.insertCell().textContent = props.nombre || 'N/A'; // Corrected 'nombre_obra' to 'nombre'
                 row.insertCell().textContent = props.localidad || 'N/A';
                 row.insertCell().textContent = props.tipo || 'N/A';
                 row.insertCell().textContent = props.organismo || 'N/A';
-                row.insertCell().textContent = `$${(parseFloat(props.monto_contrato) || 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                // Use the same cleaning logic for 'monto' here
+                const cleanedMontoForTable = (parseFloat(String(props.monto).replace(/\./g, '').replace(/,/g, '.')) || 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                row.insertCell().textContent = `$${cleanedMontoForTable}`;
                 row.insertCell().textContent = props.estado || 'N/A';
             });
 
