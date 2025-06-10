@@ -452,11 +452,11 @@
 
             // Initialize the map, centered on Santa Cruz, Argentina
             map = L.map('mapContainer').setView([-49.3308, -69.2162], 6); // Santa Cruz coordinates and zoom level
-
+map.attributionControl.setPrefix('');
             // Add OpenStreetMap tiles to the map
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            L.tileLayer('https://wms.ign.gob.ar/geoserver/gwc/service/tms/1.0.0/capabaseargenmap@EPSG%3A3857@png/{z}/{x}/{-y}.png', {
                 maxZoom: 19,
-                attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                attribution: '&copy; <a href="https://situ.santacruz.gob.ar/"> Argenmap SITU </a>'
             }).addTo(map);
 
             // Add GeoJSON data to the map
@@ -547,4 +547,3 @@
     </script>
 </body>
 </html>
-     
