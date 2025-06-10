@@ -20,7 +20,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAo9TXXGKKXl4ELJBlZTlGFhwD7tgqkxM/7ggwBY=" crossorigin=""/>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
     <style>
         body { font-family: 'Inter', sans-serif; }
         .chart-container { position: relative; width: 100%; max-width: 900px; margin-left: auto; margin-right: auto; height: 400px; max-height: 50vh; }
@@ -32,12 +32,13 @@
 </head>
 <body class="bg-gray-50 text-gray-800">
 
-    <!-- Header -->
+    <!-- Header Section: Displays the main title and logo for the dashboard. -->
     <header class="bg-white shadow-md sticky top-0 z-10">
         <div class="container mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-20">
                 <div class="flex items-center">
-                    <div class="bg-[#0a2351] p-2 rounded-lg mr-4"> <!-- Deep blue from Santa Cruz website -->
+                    <div class="bg-[#0a2351] p-2 rounded-lg mr-4"> <!-- Deep blue background for the icon -->
+                        <!-- SVG icon representing public works or construction -->
                         <svg class="h-8 w-8 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18h18a2.25 2.25 0 012.25 2.25v10.5A2.25 2.25 0 0119.5 18.75H4.5A2.25 2.25 0 012.25 16.5V4.5A2.25 2.25 0 014.5 2.25z" />
                         </svg>
@@ -48,50 +49,55 @@
         </div>
     </header>
 
-    <!-- Main Content -->
+    <!-- Main Content Area: Contains all dashboard sections. -->
     <main class="container mx-auto p-4 sm:p-6 lg:p-8">
-        <!-- Loading message for data -->
+        <!-- Message displayed while data is loading. Hidden once data is fetched. -->
         <div id="loadingMessage" class="text-center text-gray-600 text-lg mt-10">Cargando datos de obras...</div>
+        <!-- Message displayed if an error occurs during data loading. Hidden otherwise. -->
         <div id="errorMessage" class="text-center text-red-600 text-lg mt-10 hidden">
             Error al cargar los datos. Por favor, intente de nuevo más tarde o verifique la conexión.
         </div>
 
-        <!-- KPI Cards Section -->
-        <section id="kpis" class="mb-12 hidden"> <!-- Hidden initially, shown after data loads -->
+        <!-- KPI Cards Section: Displays key performance indicators. Initially hidden. -->
+        <section id="kpis" class="mb-12 hidden">
             <div class="text-center mb-8">
                 <h2 class="text-3xl font-bold text-gray-900 section-title inline-block">Resumen General</h2>
                 <p class="text-gray-600 mt-2 max-w-2xl mx-auto">Esta sección presenta los indicadores clave de desempeño (KPIs) que resumen el estado actual de las obras públicas registradas en la provincia.</p>
             </div>
             <div id="kpiCardsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <!-- KPI Cards will be populated by JS -->
+                <!-- KPI Cards will be dynamically populated by JavaScript -->
             </div>
         </section>
 
-        <!-- Charts Section -->
-        <section id="charts" class="mb-12 hidden"> <!-- Hidden initially, shown after data loads -->
+        <!-- Charts Section: Contains various interactive charts for data visualization. Initially hidden. -->
+        <section id="charts" class="mb-12 hidden">
             <div class="text-center mb-8">
                 <h2 class="text-3xl font-bold text-gray-900 section-title inline-block">Análisis Visual</h2>
                 <p class="text-gray-600 mt-2 max-w-2xl mx-auto">Explore la distribución de las obras a través de gráficos interactivos. Puede pasar el cursor sobre los gráficos para ver detalles específicos.</p>
             </div>
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Chart for Projects by Locality -->
                 <div class="bg-white p-6 rounded-lg shadow-lg">
                     <h3 class="text-xl font-semibold mb-4 text-center">Proyectos por Localidad</h3>
                     <div class="chart-container" style="height: 450px;">
                         <canvas id="localidadChart"></canvas>
                     </div>
                 </div>
+                <!-- Chart for Projects by Type -->
                 <div class="bg-white p-6 rounded-lg shadow-lg">
                     <h3 class="text-xl font-semibold mb-4 text-center">Proyectos por Tipo</h3>
                      <div class="chart-container" style="max-width: 450px;">
                         <canvas id="tipoChart"></canvas>
                     </div>
                 </div>
+                <!-- Chart for Total Investment by Locality -->
                 <div class="bg-white p-6 rounded-lg shadow-lg">
                     <h3 class="text-xl font-semibold mb-4 text-center">Inversión Total por Localidad (En ARS)</h3>
                     <div class="chart-container">
                         <canvas id="montoChart"></canvas>
                     </div>
                 </div>
+                <!-- Chart for Projects by Organism -->
                 <div class="bg-white p-6 rounded-lg shadow-lg">
                     <h3 class="text-xl font-semibold mb-4 text-center">Proyectos por Organismo</h3>
                      <div class="chart-container" style="max-width: 450px;">
@@ -101,8 +107,8 @@
             </div>
         </section>
 
-        <!-- Map Section -->
-        <section id="map-section" class="mb-12 hidden"> <!-- Hidden initially, shown after data loads -->
+        <!-- Map Section: Displays geographical distribution of works. Initially hidden. -->
+        <section id="map-section" class="mb-12 hidden">
             <div class="text-center mb-8">
                 <h2 class="text-3xl font-bold text-gray-900 section-title inline-block">Mapa de Obras</h2>
                 <p class="text-gray-600 mt-2 max-w-2xl mx-auto">Explore la distribución geográfica de las obras en la provincia de Santa Cruz haciendo clic en los marcadores para ver los detalles del proyecto.</p>
@@ -112,17 +118,19 @@
             </div>
         </section>
 
-        <!-- Data Table Section -->
-        <section id="data-table" class="hidden"> <!-- Hidden initially, shown after data loads -->
+        <!-- Data Table Section: Provides a searchable and filterable table of all works. Initially hidden. -->
+        <section id="data-table" class="hidden">
             <div class="text-center mb-8">
                 <h2 class="text-3xl font-bold text-gray-900 section-title inline-block">Explorador de Obras</h2>
                 <p class="text-gray-600 mt-2 max-w-2xl mx-auto">Utilice el campo de búsqueda para filtrar la tabla y encontrar información detallada sobre cada obra pública. Puede buscar por nombre, localidad, tipo u organismo.</p>
             </div>
             <div class="bg-white p-6 rounded-lg shadow-lg">
                 <div class="mb-4">
+                    <!-- Search input for the data table -->
                     <input type="text" id="searchInput" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-800" placeholder="Buscar en la tabla...">
                 </div>
                 <div class="overflow-x-auto">
+                    <!-- Table to display works data -->
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>
@@ -135,7 +143,7 @@
                             </tr>
                         </thead>
                         <tbody id="obrasTableBody" class="bg-white divide-y divide-gray-200">
-                            <!-- Table rows will be populated by JS -->
+                            <!-- Table rows will be dynamically populated by JavaScript -->
                         </tbody>
                     </table>
                 </div>
@@ -143,14 +151,401 @@
         </section>
     </main>
 
-    <!-- Footer -->
+    <!-- Footer Section -->
     <footer class="bg-white mt-12 py-6 border-t border-gray-200">
         <div class="container mx-auto text-center text-gray-500">
             <p>&copy; 2025 Dashboard de Obras Públicas. Generado para el análisis de datos de Santa Cruz.</p>
-
-            </>
         </div>
     </footer>
 
     <!-- Leaflet JS Library -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+
+    <!-- Main JavaScript for data loading, processing, charts, and map initialization -->
+    <script>
+        let obrasData = []; // Global variable to store fetched data
+        let map; // Global variable for Leaflet map instance
+
+        /**
+         * Fetches GeoJSON data from the specified URL.
+         * Displays loading message, and error message if fetch fails.
+         * @returns {Promise<Object>} A promise that resolves with the GeoJSON data.
+         */
+        async function fetchGeoJSONData() {
+            const loadingMessage = document.getElementById('loadingMessage');
+            const errorMessage = document.getElementById('errorMessage');
+            loadingMessage.classList.remove('hidden'); // Show loading message
+            errorMessage.classList.add('hidden');    // Hide any previous error message
+
+            try {
+                // Fetch the GeoJSON data from the raw GitHub URL
+                const response = await fetch('https://raw.githubusercontent.com/cartosantacruz/organica/main/obras.geojson');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                obrasData = data.features; // Store features in the global variable
+                console.log('Datos cargados:', obrasData); // Log the loaded data
+                loadingMessage.classList.add('hidden'); // Hide loading message on success
+                showDashboardSections(); // Show dashboard sections after data is loaded
+                return data;
+            } catch (error) {
+                console.error('Error al cargar el archivo GeoJSON:', error);
+                loadingMessage.classList.add('hidden'); // Hide loading message
+                errorMessage.classList.remove('hidden'); // Show error message
+                return null; // Return null to indicate failure
+            }
+        }
+
+        /**
+         * Reveals all dashboard sections after data is successfully loaded.
+         */
+        function showDashboardSections() {
+            document.getElementById('kpis').classList.remove('hidden');
+            document.getElementById('charts').classList.remove('hidden');
+            document.getElementById('map-section').classList.remove('hidden');
+            document.getElementById('data-table').classList.remove('hidden');
+        }
+
+        /**
+         * Calculates and displays Key Performance Indicators (KPIs).
+         * @param {Array<Object>} features - The array of GeoJSON features (works data).
+         */
+        function renderKPIs(features) {
+            const totalObras = features.length;
+            const totalInversion = features.reduce((sum, feature) => {
+                const monto = parseFloat(feature.properties.monto_contrato) || 0;
+                return sum + monto;
+            }, 0);
+            const obrasFinalizadas = features.filter(feature => feature.properties.estado && feature.properties.estado.toLowerCase() === 'finalizada').length;
+            const obrasEnEjecucion = features.filter(feature => feature.properties.estado && feature.properties.estado.toLowerCase() === 'en ejecucion').length;
+
+            const kpiCardsContainer = document.getElementById('kpiCardsContainer');
+            kpiCardsContainer.innerHTML = `
+                <div class="kpi-card bg-white p-6 rounded-lg shadow-lg text-center">
+                    <h3 class="text-sm font-medium text-gray-500 uppercase">Total de Obras</h3>
+                    <p class="mt-1 text-4xl font-bold text-[#0a2351]">${totalObras}</p>
+                </div>
+                <div class="kpi-card bg-white p-6 rounded-lg shadow-lg text-center">
+                    <h3 class="text-sm font-medium text-gray-500 uppercase">Inversión Total</h3>
+                    <p class="mt-1 text-4xl font-bold text-[#0a2351]">$${totalInversion.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                </div>
+                <div class="kpi-card bg-white p-6 rounded-lg shadow-lg text-center">
+                    <h3 class="text-sm font-medium text-gray-500 uppercase">Obras Finalizadas</h3>
+                    <p class="mt-1 text-4xl font-bold text-green-600">${obrasFinalizadas}</p>
+                </div>
+                <div class="kpi-card bg-white p-6 rounded-lg shadow-lg text-center">
+                    <h3 class="text-sm font-medium text-gray-500 uppercase">Obras en Ejecución</h3>
+                    <p class="mt-1 text-4xl font-bold text-yellow-600">${obrasEnEjecucion}</p>
+                </div>
+            `;
+        }
+
+        /**
+         * Initializes and renders Chart.js charts.
+         * @param {Array<Object>} features - The array of GeoJSON features (works data).
+         */
+        function initCharts(features) {
+            // Data for Projects by Locality Chart
+            const localidadCounts = features.reduce((acc, feature) => {
+                const localidad = feature.properties.localidad || 'Desconocido';
+                acc[localidad] = (acc[localidad] || 0) + 1;
+                return acc;
+            }, {});
+            const sortedLocalidades = Object.entries(localidadCounts).sort(([, a], [, b]) => b - a);
+            const localidadLabels = sortedLocalidades.map(([loc]) => loc);
+            const localidadData = sortedLocalidades.map(([, count]) => count);
+
+            // Data for Projects by Type Chart
+            const tipoCounts = features.reduce((acc, feature) => {
+                const tipo = feature.properties.tipo || 'Desconocido';
+                acc[tipo] = (acc[tipo] || 0) + 1;
+                return acc;
+            }, {});
+            const tipoLabels = Object.keys(tipoCounts);
+            const tipoData = Object.values(tipoCounts);
+
+            // Data for Total Investment by Locality Chart
+            const montoPorLocalidad = features.reduce((acc, feature) => {
+                const localidad = feature.properties.localidad || 'Desconocido';
+                const monto = parseFloat(feature.properties.monto_contrato) || 0;
+                acc[localidad] = (acc[localidad] || 0) + monto;
+                return acc;
+            }, {});
+            const sortedMontoLocalidades = Object.entries(montoPorLocalidad).sort(([, a], [, b]) => b - a);
+            const montoLabels = sortedMontoLocalidades.map(([loc]) => loc);
+            const montoData = sortedMontoLocalidades.map(([, monto]) => monto);
+
+            // Data for Projects by Organism Chart
+            const organismoCounts = features.reduce((acc, feature) => {
+                const organismo = feature.properties.organismo || 'Desconocido';
+                acc[organismo] = (acc[organismo] || 0) + 1;
+                return acc;
+            }, {});
+            const organismoLabels = Object.keys(organismoCounts);
+            const organismoData = Object.values(organismoCounts);
+
+            // Generate colors for charts
+            const generateColors = (count) => {
+                const colors = [];
+                for (let i = 0; i < count; i++) {
+                    // Using a blue-green-gray palette for consistency
+                    const r = Math.floor(Math.random() * 50) + 10;
+                    const g = Math.floor(Math.random() * 100) + 50;
+                    const b = Math.floor(Math.random() * 150) + 100;
+                    colors.push(`rgba(${r}, ${g}, ${b}, 0.8)`);
+                }
+                return colors;
+            };
+
+            // Chart: Projects by Locality
+            new Chart(document.getElementById('localidadChart'), {
+                type: 'bar',
+                data: {
+                    labels: localidadLabels,
+                    datasets: [{
+                        label: 'Número de Proyectos',
+                        data: localidadData,
+                        backgroundColor: generateColors(localidadLabels.length),
+                        borderColor: generateColors(localidadLabels.length).map(c => c.replace('0.8', '1')),
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${context.raw}`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Chart: Projects by Type
+            new Chart(document.getElementById('tipoChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: tipoLabels,
+                    datasets: [{
+                        label: 'Proyectos por Tipo',
+                        data: tipoData,
+                        backgroundColor: generateColors(tipoLabels.length),
+                        borderColor: '#fff',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed !== null) {
+                                        label += context.parsed;
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Chart: Total Investment by Locality
+            new Chart(document.getElementById('montoChart'), {
+                type: 'bar',
+                data: {
+                    labels: montoLabels,
+                    datasets: [{
+                        label: 'Inversión Total (ARS)',
+                        data: montoData,
+                        backgroundColor: generateColors(montoLabels.length),
+                        borderColor: generateColors(montoLabels.length).map(c => c.replace('0.8', '1')),
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: $${context.raw.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Chart: Projects by Organism
+            new Chart(document.getElementById('organismoChart'), {
+                type: 'pie',
+                data: {
+                    labels: organismoLabels,
+                    datasets: [{
+                        label: 'Proyectos por Organismo',
+                        data: organismoData,
+                        backgroundColor: generateColors(organismoLabels.length),
+                        borderColor: '#fff',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed !== null) {
+                                        label += context.parsed;
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        /**
+         * Initializes and renders the Leaflet map with GeoJSON data.
+         * @param {Object} geojsonData - The GeoJSON object containing works data.
+         */
+        function initMap(geojsonData) {
+            // Check if map instance already exists to prevent re-initialization
+            if (map) {
+                map.remove(); // Remove existing map before creating a new one
+            }
+
+            // Initialize the map, centered on Santa Cruz, Argentina
+            map = L.map('mapContainer').setView([-49.3308, -69.2162], 6); // Santa Cruz coordinates and zoom level
+
+            // Add OpenStreetMap tiles to the map
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            }).addTo(map);
+
+            // Add GeoJSON data to the map
+            L.geoJson(geojsonData, {
+                onEachFeature: function (feature, layer) {
+                    // Create a popup with detailed information for each feature
+                    let popupContent = `
+                        <h4 class="font-bold">${feature.properties.nombre_obra || 'Sin Nombre'}</h4>
+                        <p><strong>Localidad:</strong> ${feature.properties.localidad || 'N/A'}</p>
+                        <p><strong>Tipo:</strong> ${feature.properties.tipo || 'N/A'}</p>
+                        <p><strong>Organismo:</strong> ${feature.properties.organismo || 'N/A'}</p>
+                        <p><strong>Monto:</strong> $${(parseFloat(feature.properties.monto_contrato) || 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                        <p><strong>Estado:</strong> ${feature.properties.estado || 'N/A'}</p>
+                    `;
+                    layer.bindPopup(popupContent);
+                },
+                pointToLayer: function (feature, latlng) {
+                    // Custom marker style (e.g., a blue circle marker)
+                    return L.circleMarker(latlng, {
+                        radius: 8,
+                        fillColor: "#0a2351", // Deep blue color
+                        color: "#fff",
+                        weight: 1,
+                        opacity: 1,
+                        fillOpacity: 0.8
+                    });
+                }
+            }).addTo(map);
+
+            // Invalidate map size to ensure it renders correctly, especially after being hidden
+            map.invalidateSize();
+        }
+
+        /**
+         * Populates the data table with works information and sets up search functionality.
+         * @param {Array<Object>} features - The array of GeoJSON features (works data).
+         */
+        function populateDataTable(features) {
+            const tbody = document.getElementById('obrasTableBody');
+            tbody.innerHTML = ''; // Clear existing rows
+
+            features.forEach(feature => {
+                const props = feature.properties;
+                const row = tbody.insertRow();
+                row.classList.add('hover:bg-gray-100'); // Add hover effect for table rows
+
+                row.insertCell().textContent = props.nombre_obra || 'N/A';
+                row.insertCell().textContent = props.localidad || 'N/A';
+                row.insertCell().textContent = props.tipo || 'N/A';
+                row.insertCell().textContent = props.organismo || 'N/A';
+                row.insertCell().textContent = `$${(parseFloat(props.monto_contrato) || 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                row.insertCell().textContent = props.estado || 'N/A';
+            });
+
+            // Search functionality for the table
+            const searchInput = document.getElementById('searchInput');
+            searchInput.addEventListener('keyup', (event) => {
+                const filter = event.target.value.toLowerCase();
+                const rows = tbody.getElementsByTagName('tr');
+                Array.from(rows).forEach(row => {
+                    const textContent = row.textContent.toLowerCase();
+                    if (textContent.includes(filter)) {
+                        row.style.display = ''; // Show row
+                    } else {
+                        row.style.display = 'none'; // Hide row
+                    }
+                });
+            });
+        }
+
+        // --- Main execution flow when the DOM is fully loaded ---
+        document.addEventListener('DOMContentLoaded', async () => {
+            const geojsonData = await fetchGeoJSONData();
+
+            if (geojsonData && obrasData.length > 0) {
+                // Render KPIs
+                renderKPIs(obrasData);
+                // Initialize Charts
+                initCharts(obrasData);
+                // Initialize Map
+                initMap(geojsonData); // Pass the raw geojsonData for the map
+                // Populate Data Table
+                populateDataTable(obrasData);
+            } else {
+                console.warn("No se pudieron cargar los datos o no hay obras para mostrar.");
+            }
+        });
+    </script>
+</body>
+</html>
+
+        
