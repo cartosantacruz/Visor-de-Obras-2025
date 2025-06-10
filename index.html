@@ -464,7 +464,7 @@
                 onEachFeature: function (feature, layer) {
                     // Create a popup with detailed information for each feature
                     let popupContent = `
-                        <h4 class="font-bold">${feature.properties.nombre_obra || 'Sin Nombre'}</h4>
+                        <h4 class="font-bold">${feature.properties.nombre_obra || 'Plan de Obras 2025'}</h4>
                         <p><strong>Localidad:</strong> ${feature.properties.localidad || 'N/A'}</p>
                         <p><strong>Tipo:</strong> ${feature.properties.tipo || 'N/A'}</p>
                         <p><strong>Organismo:</strong> ${feature.properties.organismo || 'N/A'}</p>
@@ -547,5 +547,4 @@
     </script>
 </body>
 </html>
-
-        
+     
