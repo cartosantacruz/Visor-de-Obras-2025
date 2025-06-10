@@ -179,7 +179,7 @@
 
             try {
                 // Fetch the GeoJSON data from the raw GitHub URL
-                const response = await fetch('https://raw.githubusercontent.com/cartosantacruz/organica/main/obras.geojson');
+                const response = await fetch('https://raw.githubusercontent.com/cartosantacruz/Visor-de-Obras-2025/refs/heads/main/obras.geojson');
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
