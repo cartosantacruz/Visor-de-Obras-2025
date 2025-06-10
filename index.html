@@ -185,9 +185,8 @@
                 }
                 const data = await response.json();
                 obrasData = data.features; // Store features in the global variable
-                console.log('Datos cargados:', obrasData); // Log the loaded data
+                console.log('Datos cargados (obrasData):', obrasData); // Log the loaded data
                 loadingMessage.classList.add('hidden'); // Hide loading message on success
-                showDashboardSections(); // Show dashboard sections after data is loaded
                 return data;
             } catch (error) {
                 console.error('Error al cargar el archivo GeoJSON:', error);
@@ -212,13 +211,38 @@
          * @param {Array<Object>} features - The array of GeoJSON features (works data).
          */
         function renderKPIs(features) {
+            // Ensure features array is valid before processing
+            if (!features || features.length === 0) {
+                console.warn("No hay datos de obras para calcular los KPIs o los datos son inválidos.");
+                document.getElementById('kpiCardsContainer').innerHTML = `
+                    <div class="kpi-card bg-white p-6 rounded-lg shadow-lg text-center col-span-full">
+                        <h3 class="text-sm font-medium text-gray-500 uppercase">Sin datos disponibles</h3>
+                        <p class="mt-1 text-xl font-bold text-gray-400">Verifique la fuente de datos.</p>
+                    </div>
+                `;
+                return; // Exit if no features to process
+            }
+
             const totalObras = features.length;
+            console.log('KPI Debug: totalObras =', totalObras); // Debug log
+
             const totalInversion = features.reduce((sum, feature) => {
+                // Safely parse monto_contrato, defaulting to 0 if invalid
                 const monto = parseFloat(feature.properties.monto_contrato) || 0;
+                // console.log(`KPI Debug: Obra "${feature.properties.nombre_obra}" monto_contrato raw: "${feature.properties.monto_contrato}", parsed: ${monto}`); // Uncomment for more detailed debug per item
                 return sum + monto;
             }, 0);
-            const obrasFinalizadas = features.filter(feature => feature.properties.estado && feature.properties.estado.toLowerCase() === 'finalizada').length;
-            const obrasEnEjecucion = features.filter(feature => feature.properties.estado && feature.properties.estado.toLowerCase() === 'en ejecucion').length;
+            console.log('KPI Debug: totalInversion =', totalInversion); // Debug log
+
+            const obrasFinalizadas = features.filter(feature => 
+                feature.properties.estado && String(feature.properties.estado).toLowerCase() === 'finalizada'
+            ).length;
+            console.log('KPI Debug: obrasFinalizadas =', obrasFinalizadas); // Debug log
+
+            const obrasEnEjecucion = features.filter(feature => 
+                feature.properties.estado && String(feature.properties.estado).toLowerCase() === 'en ejecucion'
+            ).length;
+            console.log('KPI Debug: obrasEnEjecucion =', obrasEnEjecucion); // Debug log
 
             const kpiCardsContainer = document.getElementById('kpiCardsContainer');
             kpiCardsContainer.innerHTML = `
@@ -246,6 +270,11 @@
          * @param {Array<Object>} features - The array of GeoJSON features (works data).
          */
         function initCharts(features) {
+            // Destroy existing charts to prevent conflicts when re-initializing
+            Chart.helpers.each(Chart.instances, function(instance) {
+                instance.destroy();
+            });
+
             // Data for Projects by Locality Chart
             const localidadCounts = features.reduce((acc, feature) => {
                 const localidad = feature.properties.localidad || 'Desconocido';
@@ -452,8 +481,9 @@
 
             // Initialize the map, centered on Santa Cruz, Argentina
             map = L.map('mapContainer').setView([-49.3308, -69.2162], 6); // Santa Cruz coordinates and zoom level
-map.attributionControl.setPrefix('');
-            // Add OpenStreetMap tiles to the map
+            map.attributionControl.setPrefix(''); // Removes Leaflet default attribution
+
+            // Add Argenmap SITU tiles to the map
             L.tileLayer('https://wms.ign.gob.ar/geoserver/gwc/service/tms/1.0.0/capabaseargenmap@EPSG%3A3857@png/{z}/{x}/{-y}.png', {
                 maxZoom: 19,
                 attribution: '&copy; <a href="https://situ.santacruz.gob.ar/"> Argenmap SITU </a>'
@@ -513,7 +543,11 @@ map.attributionControl.setPrefix('');
 
             // Search functionality for the table
             const searchInput = document.getElementById('searchInput');
-            searchInput.addEventListener('keyup', (event) => {
+            // Remove previous event listener to avoid duplicates if this function is called multiple times
+            searchInput.removeEventListener('keyup', filterTable); 
+            searchInput.addEventListener('keyup', filterTable);
+
+            function filterTable(event) {
                 const filter = event.target.value.toLowerCase();
                 const rows = tbody.getElementsByTagName('tr');
                 Array.from(rows).forEach(row => {
@@ -524,7 +558,7 @@ map.attributionControl.setPrefix('');
                         row.style.display = 'none'; // Hide row
                     }
                 });
-            });
+            }
         }
 
         // --- Main execution flow when the DOM is fully loaded ---
@@ -532,6 +566,8 @@ map.attributionControl.setPrefix('');
             const geojsonData = await fetchGeoJSONData();
 
             if (geojsonData && obrasData.length > 0) {
+                // Show dashboard sections
+                showDashboardSections();
                 // Render KPIs
                 renderKPIs(obrasData);
                 // Initialize Charts
@@ -541,10 +577,9 @@ map.attributionControl.setPrefix('');
                 // Populate Data Table
                 populateDataTable(obrasData);
             } else {
-                console.warn("No se pudieron cargar los datos o no hay obras para mostrar.");
+                console.warn("No se pudieron cargar los datos o no hay obras para mostrar. Verifique la consola para errores de red.");
             }
         });
     </script>
 </body>
 </html>
-
