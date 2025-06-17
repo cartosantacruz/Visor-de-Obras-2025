@@ -179,6 +179,7 @@
 
             try {
                 // Fetch the GeoJSON data from the raw GitHub URL
+                // Using the URL provided by the user: https://raw.githubusercontent.com/cartosantacruz/Visor-de-Obras-2025/refs/heads/main/obras.geojson
                 const response = await fetch('https://raw.githubusercontent.com/cartosantacruz/Visor-de-Obras-2025/refs/heads/main/obras.geojson');
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
@@ -245,9 +246,10 @@
             }, 0);
             console.log('KPI Debug: totalInversion =', totalInversion); // Debug log
 
-            // Note: The 'estado' values in the provided GeoJSON snippet (e.g., "mapa de inversiones")
-            // do not contain the keywords "finalizada" or "en ejecucion".
-            // Adjust the filter criteria below if your GeoJSON uses different keywords for these states.
+            // Filter criteria for 'estado' based on the provided GeoJSON:
+            // "PROYECTADA" is the most common state, "EN EJECUCION" is present for one item.
+            // If you have other states for "Finalizadas" or "En Ejecucion" (e.g., "COMPLETADA", "EN CURSO"),
+            // please specify them to improve these calculations.
             const obrasFinalizadas = features.filter(feature => 
                 feature.properties.estado && String(feature.properties.estado).toLowerCase().includes('finalizada')
             ).length;
@@ -505,16 +507,16 @@
             map.attributionControl.setPrefix(''); // Removes Leaflet default attribution
 
             // Add OpenStreetMap tiles (more robust default)
-            L.tileLayer('https://wms.ign.gob.ar/geoserver/gwc/service/tms/1.0.0/capabaseargenmap@EPSG%3A3857@png/{z}/{x}/{-y}.png', {
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 19,
-                attribution: '&copy; <a href="https://cartosantacruz.github.io/Soporte/">JGM-SITU</a>'
+                attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
             }).addTo(map);
 
             // Add GeoJSON data to the map
             L.geoJson(geojsonData, {
                 onEachFeature: function (feature, layer) {
                     // Create a popup with detailed information for each feature
-                    // Corrected 'monto_contrato' to 'monto'
+                    // Using 'nombre' and 'monto' properties as per the provided GeoJSON
                     let popupContent = `
                         <h4 class="font-bold">${feature.properties.nombre || 'Plan de Obras 2025'}</h4>
                         <p><strong>Localidad:</strong> ${feature.properties.localidad || 'N/A'}</p>
@@ -555,7 +557,8 @@
                 const row = tbody.insertRow();
                 row.classList.add('hover:bg-gray-100'); // Add hover effect for table rows
 
-                row.insertCell().textContent = props.nombre || 'N/A'; // Corrected 'nombre_obra' to 'nombre'
+                // Using 'nombre' property as per the provided GeoJSON
+                row.insertCell().textContent = props.nombre || 'N/A'; 
                 row.insertCell().textContent = props.localidad || 'N/A';
                 row.insertCell().textContent = props.tipo || 'N/A';
                 row.insertCell().textContent = props.organismo || 'N/A';
