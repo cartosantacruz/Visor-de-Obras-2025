@@ -507,7 +507,7 @@
             map.attributionControl.setPrefix(''); // Removes Leaflet default attribution
 
             // Add OpenStreetMap tiles (more robust default)
-            L.tileLayer('https://wms.ign.gob.ar/geoserver/gwc/service/tms/1.0.0/capabaseargenmap@EPSG%3A3857@png/%7Bz%7D/%7Bx%7D/%7B-y%7D.png', {
+            L.tileLayer('https://wms.ign.gob.ar/geoserver/capabaseargenmap/tms/service/wmts?request=GetCapabilities', {
                 maxZoom: 19,
                 attribution: '&copy; <a href="https://situ.santacruz.gob.ar/portal/">@SITU</a>'
             }).addTo(map);
