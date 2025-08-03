@@ -256,7 +256,7 @@
             console.log('KPI Debug: obrasFinalizadas =', obrasFinalizadas); // Debug log
 
             const obrasEnEjecucion = features.filter(feature => 
-                feature.properties.estado && String(feature.properties.estado).toLowerCase().includes('en ejecucion')
+                feature.properties.estado && String(feature.properties.estado).toLowerCase().includes('En Ejecución')
             ).length;
             console.log('KPI Debug: obrasEnEjecucion =', obrasEnEjecucion); // Debug log
 
@@ -610,3 +610,4 @@
     </script>
 </body>
 </html>
+
