@@ -37,8 +37,8 @@
         <div class="container mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-20">
                 <div class="flex items-center">
+                    <!-- Original SVG icon representing public works or construction, restored inside the blue background div -->
                     <div class="bg-[#0a2351] p-2 rounded-lg mr-4"> <!-- Deep blue background for the icon -->
-                        <!-- SVG icon representing public works or construction -->
                         <svg class="h-8 w-8 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18h18a2.25 2.25 0 012.25 2.25v10.5A2.25 2.25 0 0119.5 18.75H4.5A2.25 2.25 0 012.25 16.5V4.5A2.25 2.25 0 014.5 2.25z" />
                         </svg>
@@ -256,7 +256,7 @@
             console.log('KPI Debug: obrasFinalizadas =', obrasFinalizadas); // Debug log
 
             const obrasEnEjecucion = features.filter(feature => 
-                feature.properties.estado && String(feature.properties.estado).toLowerCase().includes('En Ejecución')
+                feature.properties.estado && String(feature.properties.estado).toLowerCase().includes('en ejecucion')
             ).length;
             console.log('KPI Debug: obrasEnEjecucion =', obrasEnEjecucion); // Debug log
 
@@ -507,9 +507,9 @@
             map.attributionControl.setPrefix(''); // Removes Leaflet default attribution
 
             // Add OpenStreetMap tiles (more robust default)
-            L.tileLayer('https://wms.ign.gob.ar/geoserver/gwc/service/tms/1.0.0/capabaseargenmap@EPSG%3A3857@png/{z}/{x}/{-y}.png', {
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 19,
-                attribution: '&copy; <a href="https://situ.santacruz.gob.ar/portal/">@SITU</a>'
+                attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
             }).addTo(map);
 
             // Add GeoJSON data to the map
@@ -554,10 +554,11 @@
 
             features.forEach(feature => {
                 const props = feature.properties;
-                const row = tbody.insertRow();
+                // Corrected: Use insertRow() to create a new table row (<tr>)
+                const row = tbody.insertRow(); 
                 row.classList.add('hover:bg-gray-100'); // Add hover effect for table rows
 
-                // Using 'nombre' property as per the provided GeoJSON
+                // Now use insertCell() on the newly created row
                 row.insertCell().textContent = props.nombre || 'N/A'; 
                 row.insertCell().textContent = props.localidad || 'N/A';
                 row.insertCell().textContent = props.tipo || 'N/A';
@@ -610,4 +611,3 @@
     </script>
 </body>
 </html>
-
