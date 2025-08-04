@@ -247,16 +247,14 @@
             console.log('KPI Debug: totalInversion =', totalInversion); // Debug log
 
             // Filter criteria for 'estado' based on the provided GeoJSON:
-            // "PROYECTADA" is the most common state, "EN EJECUCION" is present for one item.
-            // If you have other states for "Finalizadas" or "En Ejecucion" (e.g., "COMPLETADA", "EN CURSO"),
-            // please specify them to improve these calculations.
+            // Using exact matches for "Finalizada" and "En Ejecución" (case-insensitive)
             const obrasFinalizadas = features.filter(feature => 
-                feature.properties.estado && String(feature.properties.estado).toLowerCase().includes('finalizada')
+                feature.properties.estado && String(feature.properties.estado).toLowerCase() === 'finalizada'
             ).length;
             console.log('KPI Debug: obrasFinalizadas =', obrasFinalizadas); // Debug log
 
             const obrasEnEjecucion = features.filter(feature => 
-                feature.properties.estado && String(feature.properties.estado).toLowerCase().includes('en ejecucion')
+                feature.properties.estado && String(feature.properties.estado).toLowerCase() === 'en ejecución'
             ).length;
             console.log('KPI Debug: obrasEnEjecucion =', obrasEnEjecucion); // Debug log
 
@@ -440,15 +438,6 @@
                             ticks: {
                                 callback: function(value) {
                                     return '$' + value.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-                                }
-                            }
-                        }
-                    },
-                    plugins: {
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    return `${context.dataset.label}: $${context.raw.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
                                 }
                             }
                         }
