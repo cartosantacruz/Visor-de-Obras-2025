@@ -1,15 +1,4 @@
 <!DOCTYPE html>
-<!-- Chosen Palette: Santa Cruz Official (Deep Blue, Light Gray, White, Dark Gray text) -->
-<!-- Application Structure Plan: The application is designed as a single-page interactive dashboard. This structure was chosen for its usability in data exploration, allowing users to get a quick overview (KPIs), analyze trends (charts), look up specific details (filterable table), and visualize geographical distribution (map) without navigating away from the page. The flow is designed to be intuitive: start with a high-level summary, then drill down into visual analysis, geographical context, or detailed data. This is more user-friendly than a linear report, as it allows users to access the information they need in the order they prefer. -->
-<!-- Visualization & Content Choices:
-- KPIs: Inform goal. Method: Styled HTML divs. Justification: Standard for quick summaries.
-- Projects/Investment per Locality: Compare goal. Method: Chart.js Bar Chart. Justification: Best for comparing quantities across categories (localities).
-- Projects by Type: Inform goal (composition). Method: Chart.js Doughnut Chart. Justification: Ideal for showing part-to-whole relationships.
-- Projects by Organism: Inform goal (composition). Method: Chart.js Pie Chart. Justification: Effective for showing distribution by responsible entity.
-- Map of Works: Inform goal (geographical distribution). Method: Leaflet.js map with GeoJSON overlay. Justification: Provides direct spatial context for each project.
-- Data Table: Organize/Inform goal. Method: Filterable HTML table. Justification: Provides granular access to all data points for users needing specifics.
-- Library/Method: All charts use Chart.js on <canvas>. Map uses Leaflet.js. All layout is Tailwind CSS.
--->
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -32,14 +21,11 @@
 </head>
 <body class="bg-gray-50 text-gray-800">
 
-    <!-- Header Section: Displays the main title and logo for the dashboard. -->
     <header class="bg-white shadow-md sticky top-0 z-10">
         <div class="container mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-20">
                 <div class="flex items-center">
-                    <!-- Original SVG icon representing public works or construction, restored inside the blue background div -->
-                    <div class="bg-[#0a2351] p-2 rounded-lg mr-4"> <!-- Deep blue background for the icon -->
-                        <svg class="h-8 w-8 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <div class="bg-[#0a2351] p-2 rounded-lg mr-4"> <svg class="h-8 w-8 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18h18a2.25 2.25 0 012.25 2.25v10.5A2.25 2.25 0 0119.5 18.75H4.5A2.25 2.25 0 012.25 16.5V4.5A2.25 2.25 0 014.5 2.25z" />
                         </svg>
                     </div>
@@ -49,55 +35,46 @@
         </div>
     </header>
 
-    <!-- Main Content Area: Contains all dashboard sections. -->
     <main class="container mx-auto p-4 sm:p-6 lg:p-8">
-        <!-- Message displayed while data is loading. Hidden once data is fetched. -->
         <div id="loadingMessage" class="text-center text-gray-600 text-lg mt-10">Cargando datos de obras...</div>
-        <!-- Message displayed if an error occurs during data loading. Hidden otherwise. -->
         <div id="errorMessage" class="text-center text-red-600 text-lg mt-10 hidden">
             Error al cargar los datos. Por favor, intente de nuevo más tarde o verifique la conexión.
         </div>
 
-        <!-- KPI Cards Section: Displays key performance indicators. Initially hidden. -->
         <section id="kpis" class="mb-12 hidden">
             <div class="text-center mb-8">
                 <h2 class="text-3xl font-bold text-gray-900 section-title inline-block">Resumen General</h2>
                 <p class="text-gray-600 mt-2 max-w-2xl mx-auto">Esta sección presenta los indicadores clave de desempeño (KPIs) que resumen el estado actual de las obras públicas registradas en la provincia.</p>
             </div>
             <div id="kpiCardsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <!-- KPI Cards will be dynamically populated by JavaScript -->
-            </div>
+                </div>
         </section>
 
-        <!-- Charts Section: Contains various interactive charts for data visualization. Initially hidden. -->
         <section id="charts" class="mb-12 hidden">
             <div class="text-center mb-8">
                 <h2 class="text-3xl font-bold text-gray-900 section-title inline-block">Análisis Visual</h2>
                 <p class="text-gray-600 mt-2 max-w-2xl mx-auto">Explore la distribución de las obras a través de gráficos interactivos. Puede pasar el cursor sobre los gráficos para ver detalles específicos.</p>
             </div>
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <!-- Chart for Projects by Locality -->
                 <div class="bg-white p-6 rounded-lg shadow-lg">
                     <h3 class="text-xl font-semibold mb-4 text-center">Proyectos por Localidad</h3>
                     <div class="chart-container" style="height: 450px;">
                         <canvas id="localidadChart"></canvas>
                     </div>
                 </div>
-                <!-- Chart for Projects by Type -->
                 <div class="bg-white p-6 rounded-lg shadow-lg">
                     <h3 class="text-xl font-semibold mb-4 text-center">Proyectos por Tipo</h3>
                      <div class="chart-container" style="max-width: 450px;">
                         <canvas id="tipoChart"></canvas>
                     </div>
                 </div>
-                <!-- Chart for Total Investment by Locality -->
                 <div class="bg-white p-6 rounded-lg shadow-lg">
-                    <h3 class="text-xl font-semibold mb-4 text-center">Inversión Total por Localidad (En ARS)</h3>
+                    <h3 class="text-xl font-semibold mb-1 text-center">Inversión Total por Localidad</h3>
+                    <p class="text-xs text-gray-500 text-center mb-4">* Las cifras del eje Y están expresadas en **Millones** o **Miles de Millones** de ARS.</p>
                     <div class="chart-container">
                         <canvas id="montoChart"></canvas>
                     </div>
                 </div>
-                <!-- Chart for Projects by Organism -->
                 <div class="bg-white p-6 rounded-lg shadow-lg">
                     <h3 class="text-xl font-semibold mb-4 text-center">Proyectos por Organismo</h3>
                      <div class="chart-container" style="max-width: 450px;">
@@ -107,7 +84,6 @@
             </div>
         </section>
 
-        <!-- Map Section: Displays geographical distribution of works. Initially hidden. -->
         <section id="map-section" class="mb-12 hidden">
             <div class="text-center mb-8">
                 <h2 class="text-3xl font-bold text-gray-900 section-title inline-block">Mapa de Obras</h2>
@@ -118,7 +94,6 @@
             </div>
         </section>
 
-        <!-- Data Table Section: Provides a searchable and filterable table of all works. Initially hidden. -->
         <section id="data-table" class="hidden">
             <div class="text-center mb-8">
                 <h2 class="text-3xl font-bold text-gray-900 section-title inline-block">Explorador de Obras</h2>
@@ -126,11 +101,9 @@
             </div>
             <div class="bg-white p-6 rounded-lg shadow-lg">
                 <div class="mb-4">
-                    <!-- Search input for the data table -->
                     <input type="text" id="searchInput" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-800" placeholder="Buscar en la tabla...">
                 </div>
                 <div class="overflow-x-auto">
-                    <!-- Table to display works data -->
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>
@@ -143,25 +116,21 @@
                             </tr>
                         </thead>
                         <tbody id="obrasTableBody" class="bg-white divide-y divide-gray-200">
-                            <!-- Table rows will be dynamically populated by JavaScript -->
-                        </tbody>
+                            </tbody>
                     </table>
                 </div>
             </div>
         </section>
     </main>
 
-    <!-- Footer Section -->
     <footer class="bg-white mt-12 py-6 border-t border-gray-200">
         <div class="container mx-auto text-center text-gray-500">
             <p>&copy; 2025 Dashboard de Obras Públicas. Generado para el análisis de datos de Santa Cruz.</p>
         </div>
     </footer>
 
-    <!-- Leaflet JS Library -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 
-    <!-- Main JavaScript for data loading, processing, charts, and map initialization -->
     <script>
         let obrasData = []; // Global variable to store fetched data
         let map; // Global variable for Leaflet map instance
@@ -179,7 +148,6 @@
 
             try {
                 // Fetch the GeoJSON data from the raw GitHub URL
-                // Using the URL provided by the user: https://raw.githubusercontent.com/cartosantacruz/Visor-de-Obras-2025/refs/heads/main/obras.geojson
                 const response = await fetch('https://raw.githubusercontent.com/cartosantacruz/Visor-de-Obras-2025/refs/heads/main/obras.geojson');
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
@@ -195,6 +163,56 @@
                 errorMessage.classList.remove('hidden'); // Show error message
                 return null; // Return null to indicate failure
             }
+        }
+
+        /**
+         * Formatea un monto numérico grande para el KPI (ej. 3,69* y la nota de aclaración).
+         * @param {number} monto - El valor monetario a formatear.
+         * @returns {Object} Un objeto con el valor de display y la nota de aclaración.
+         */
+        function formatMontoForDisplay(monto) {
+            // El valor de display para 0 o nulo es solo '0'
+            if (monto === null || monto === 0) return { displayValue: '0', clarificationNote: '' };
+
+            const montoAbs = Math.abs(monto);
+            const signo = monto < 0 ? '-' : '';
+            let valorRedondeado;
+            let nota = '';
+
+            // Miles de Millones
+            if (montoAbs >= 1000000000) {
+                valorRedondeado = (montoAbs / 1000000000).toFixed(2);
+                // CAMBIO: La nota ahora es '* Mil Millones (ARS)'
+                nota = '* Mil Millones (ARS)';
+            }
+            // Millones
+            else if (montoAbs >= 1000000) {
+                valorRedondeado = (montoAbs / 1000000).toFixed(2);
+                // CAMBIO: La nota ahora es '* Millones (ARS)'
+                nota = '* Millones (ARS)';
+            }
+            // Monto estándar: lo formateamos completo
+            else {
+                const formatter = new Intl.NumberFormat('es-AR', {
+                    style: 'decimal',
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                });
+                // Devolvemos el número formateado completo sin 'ARS' ni asterisco
+                return { displayValue: formatter.format(monto), clarificationNote: '' };
+            }
+
+            // Usamos Intl.NumberFormat para la localización (comas y puntos) para el número redondeado
+            const formatterDecimal = new Intl.NumberFormat('es-AR', {
+                style: 'decimal',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+            });
+
+            const formattedNumber = formatterDecimal.format(valorRedondeado);
+
+            // Devolvemos el valor formateado con el asterisco, sin 'ARS'
+            return { displayValue: `${signo}${formattedNumber}*`, clarificationNote: nota };
         }
 
         /**
@@ -228,26 +246,25 @@
             console.log('KPI Debug: totalObras =', totalObras); // Debug log
 
             const totalInversion = features.reduce((sum, feature) => {
-                // Get the raw value of 'monto' (corrected from 'monto_contrato')
+                // Get the raw value of 'monto'
                 const rawMonto = feature.properties.monto; 
                 let cleanedMonto = 0;
 
                 // Attempt to clean and parse the 'monto' property.
-                // It handles both string and number types.
-                // For strings, it removes thousands separators (dots) and replaces comma decimal separators with dots.
                 if (typeof rawMonto === 'string') {
                     cleanedMonto = parseFloat(rawMonto.replace(/\./g, '').replace(/,/g, '.')) || 0;
                 } else if (typeof rawMonto === 'number') {
                     cleanedMonto = rawMonto;
                 }
                 
-                // console.log(`KPI Debug: Obra "${feature.properties.nombre}" monto raw: "${rawMonto}", cleaned/parsed: ${cleanedMonto}`); // Uncomment for more detailed debug per item
                 return sum + cleanedMonto;
             }, 0);
             console.log('KPI Debug: totalInversion =', totalInversion); // Debug log
 
+            // Aplicamos el nuevo formato para el KPI
+            const inversionFormateada = formatMontoForDisplay(totalInversion);
+
             // Filter criteria for 'estado' based on the provided GeoJSON:
-            // Using exact matches for "Finalizada" and "En Ejecución" (case-insensitive)
             const obrasFinalizadas = features.filter(feature => 
                 feature.properties.estado && String(feature.properties.estado).toLowerCase() === 'finalizada'
             ).length;
@@ -266,7 +283,8 @@
                 </div>
                 <div class="kpi-card bg-white p-6 rounded-lg shadow-lg text-center">
                     <h3 class="text-sm font-medium text-gray-500 uppercase">Inversión Total</h3>
-                    <p class="mt-1 text-4xl font-bold text-[#0a2351]">$${totalInversion.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                    <p class="mt-1 text-4xl font-bold text-[#0a2351]">${inversionFormateada.displayValue}</p>
+                    <p class="text-xs text-gray-500 mt-1">${inversionFormateada.clarificationNote}</p>
                 </div>
                 <div class="kpi-card bg-white p-6 rounded-lg shadow-lg text-center">
                     <h3 class="text-sm font-medium text-gray-500 uppercase">Obras Finalizadas</h3>
@@ -313,7 +331,7 @@
                 const localidad = feature.properties.localidad || 'Desconocido';
                 // Use the same cleaning logic as in renderKPIs
                 let cleanedMonto = 0;
-                const rawMonto = feature.properties.monto; // Corrected from monto_contrato
+                const rawMonto = feature.properties.monto; 
                 if (typeof rawMonto === 'string') {
                     cleanedMonto = parseFloat(rawMonto.replace(/\./g, '').replace(/,/g, '.')) || 0;
                 } else if (typeof rawMonto === 'number') {
@@ -416,7 +434,7 @@
                 }
             });
 
-            // Chart: Total Investment by Locality
+            // Chart: Total Investment by Locality (CON FORMATO DE EJE Y ABREVIADO)
             new Chart(document.getElementById('montoChart'), {
                 type: 'bar',
                 data: {
@@ -437,7 +455,14 @@
                             beginAtZero: true,
                             ticks: {
                                 callback: function(value) {
-                                    return '$' + value.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+                                    // Utiliza la lógica de formato abreviado para el eje Y
+                                    const montoAbs = Math.abs(value);
+                                    if (montoAbs >= 1000000000) {
+                                        return new Intl.NumberFormat('es-AR', { maximumFractionDigits: 1 }).format(montoAbs / 1000000000) + ' Mil Mill.';
+                                    } else if (montoAbs >= 1000000) {
+                                        return new Intl.NumberFormat('es-AR', { maximumFractionDigits: 1 }).format(montoAbs / 1000000) + ' Mill.';
+                                    }
+                                    return '$' + new Intl.NumberFormat('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value);
                                 }
                             }
                         }
@@ -505,13 +530,15 @@
             L.geoJson(geojsonData, {
                 onEachFeature: function (feature, layer) {
                     // Create a popup with detailed information for each feature
-                    // Using 'nombre' and 'monto' properties as per the provided GeoJSON
+                    const rawMonto = feature.properties.monto;
+                    const cleanedMonto = (parseFloat(String(rawMonto).replace(/\./g, '').replace(/,/g, '.')) || 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    
                     let popupContent = `
                         <h4 class="font-bold">${feature.properties.nombre || 'Plan de Obras 2025'}</h4>
                         <p><strong>Localidad:</strong> ${feature.properties.localidad || 'N/A'}</p>
                         <p><strong>Tipo:</strong> ${feature.properties.tipo || 'N/A'}</p>
                         <p><strong>Organismo:</strong> ${feature.properties.organismo || 'N/A'}</p>
-                        <p><strong>Monto:</strong> $${(parseFloat(String(feature.properties.monto).replace(/\./g, '').replace(/,/g, '.')) || 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                        <p><strong>Monto:</strong> $${cleanedMonto}</p>
                         <p><strong>Estado:</strong> ${feature.properties.estado || 'N/A'}</p>
                     `;
                     layer.bindPopup(popupContent);
@@ -523,8 +550,7 @@
                         fillColor: "#0a2351", // Deep blue color
                         color: "#fff",
                         weight: 1,
-                        opacity: 1,
-                        fillOpacity: 0.8
+                        opacity: 0.8
                     });
                 }
             }).addTo(map);
@@ -552,7 +578,7 @@
                 row.insertCell().textContent = props.localidad || 'N/A';
                 row.insertCell().textContent = props.tipo || 'N/A';
                 row.insertCell().textContent = props.organismo || 'N/A';
-                // Use the same cleaning logic for 'monto' here
+                // Use the cleaning logic for 'monto' here (full detail)
                 const cleanedMontoForTable = (parseFloat(String(props.monto).replace(/\./g, '').replace(/,/g, '.')) || 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                 row.insertCell().textContent = `$${cleanedMontoForTable}`;
                 row.insertCell().textContent = props.estado || 'N/A';
@@ -600,5 +626,3 @@
     </script>
 </body>
 </html>
-
-
