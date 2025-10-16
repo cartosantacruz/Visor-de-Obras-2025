@@ -169,4 +169,4 @@
 { "type": "Feature", "properties": { "id": 164, "localidad": "Río Gallegos", "nombre": "EDIFICIO SANTA CRUZ PUEDE - PARQUE DE ALIMENTOS", "tipo": "Infraestructura\/Servicios", "organismo": "IDUV", "monto": null, "estado": "Proyectada", "avporr": null, "avporc": null, "proyecto": "EDIFICIO SANTA CRUZ PUEDE - PARQUE DE ALIMENTOS", "cant_usu": null, "DESMZA": "EDIFICIO SANTA CRUZ PUEDE + PARQUE DE ALIMENTOS", "TOTMZA": null, "x": -69.302942581884281, "y": -51.619801355921126, "chek": null }, "geometry": { "type": "MultiPoint", "coordinates": [ [ -69.302942581884281, -51.619801355921126 ] ] } },
 { "type": "Feature", "properties": { "id": 165, "localidad": "Río Gallegos", "nombre": "Parque Fotovoltaico", "tipo": "Infraestructura\/Servicios", "organismo": "SPSE", "monto": null, "estado": "Proyectada", "avporr": null, "avporc": null, "proyecto": "Parque Fotovoltaico", "cant_usu": null, "DESMZA": "Parque Fotovoltaico", "TOTMZA": null, "x": -69.374821460241051, "y": -51.620017811997045, "chek": null }, "geometry": { "type": "MultiPoint", "coordinates": [ [ -69.374821460241051, -51.620017811997045 ] ] } }
 ]
-}
+}  
