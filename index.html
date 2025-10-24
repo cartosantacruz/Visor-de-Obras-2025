@@ -148,7 +148,7 @@
 
             try {
                 // Fetch the GeoJSON data from the raw GitHub URL
-                const response = await fetch('https://drive.google.com/drive/folders/1bm589c4OXCeu4EjCHiwSNotL1g0Hx3DB');
+                const response = await fetch('https://raw.githubusercontent.com/cartosantacruz/Visor-de-Obras-2025/refs/heads/main/obras.geojson');
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
@@ -626,5 +626,6 @@
     </script>
 </body>
 </html>
+
 
 
